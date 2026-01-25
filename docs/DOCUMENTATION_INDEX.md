@@ -1,6 +1,6 @@
 # 📚 Complete Documentation Index
 
-**Central hub for all notepadpp-mcp documentation**
+**Central hub for all pywinauto-mcp documentation - v0.3.1**
 
 ---
 
@@ -81,11 +81,14 @@ docs/
 ├── DOCUMENTATION_INDEX.md     📚 This file - Complete doc index
 ├── ORGANIZATION_SUMMARY.md    📋 Documentation organization log
 │
-src/notepadpp_mcp/docs/
+src/pywinauto_mcp/
 ├── README.md                  📘 Complete API documentation
-├── PRD.md                     📋 Product requirements
-├── PLUGIN_ECOSYSTEM.md        🔌 Plugin integration (1,400+)
-└── examples/                  💡 Configuration examples
+├── docs/                      
+│   └── examples/              � Configuration examples
+```
+
+docs/ (root)
+├── PRD.md                     � Project Requirements Document
 
 scripts/
 ├── README.md                  🔧 Scripts documentation

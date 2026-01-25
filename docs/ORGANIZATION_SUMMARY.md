@@ -1,6 +1,6 @@
 # 📚 Documentation Organization Summary
 
-**Complete reorganization of notepadpp-mcp documentation - October 8, 2025**
+**Complete reorganization of pywinauto-mcp documentation - January 2026**
 
 ---
 
