@@ -1,18 +1,19 @@
-"""
-Window management tools for PyWinAuto MCP.
+"""Window management tools for PyWinAuto MCP.
 
 This module provides functions for managing windows, including maximizing,
 minimizing, restoring, and setting window positions.
 """
+
 import logging
 import time
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from pywinauto import WindowNotFoundError
 
 # Import the FastMCP app instance from the main package
 try:
     from pywinauto_mcp.main import app
+
     logger = logging.getLogger(__name__)
     logger.info("Successfully imported FastMCP app instance in window tools")
 except ImportError as e:
@@ -24,136 +25,105 @@ except ImportError as e:
 if app is not None:
     logger.info("Registering window tools with FastMCP")
 
-    @app.tool(
-        name="maximize_window",
-        description="Maximizes the specified window."
-    )
-    def maximize_window(handle: int) -> Dict[str, Any]:
-        """
-        Maximize a window.
+    @app.tool(name="maximize_window", description="Maximizes the specified window.")
+    def maximize_window(handle: int) -> dict[str, Any]:
+        """Maximize a window.
 
         Args:
             handle: The window handle to maximize
 
         Returns:
             Dict containing the result of the operation
+
         """
         try:
             desktop = get_desktop()
             window = desktop.window(handle=handle)
             window.maximize()
-            
+
             return {
                 "status": "success",
                 "handle": handle,
                 "action": "maximized",
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
-            
-        except WindowNotFoundError as e:
+
+        except WindowNotFoundError:
             return {
                 "status": "error",
                 "error": f"Window with handle {handle} not found",
-                "error_type": "WindowNotFoundError"
+                "error_type": "WindowNotFoundError",
             }
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "error_type": type(e).__name__
-            }
+            return {"status": "error", "error": str(e), "error_type": type(e).__name__}
 
-    @app.tool(
-        name="minimize_window",
-        description="Minimizes the specified window."
-    )
-    def minimize_window(handle: int) -> Dict[str, Any]:
-        """
-        Minimize a window.
+    @app.tool(name="minimize_window", description="Minimizes the specified window.")
+    def minimize_window(handle: int) -> dict[str, Any]:
+        """Minimize a window.
 
         Args:
             handle: The window handle to minimize
 
         Returns:
             Dict containing the result of the operation
+
         """
         try:
             desktop = get_desktop()
             window = desktop.window(handle=handle)
             window.minimize()
-            
+
             return {
                 "status": "success",
                 "handle": handle,
                 "action": "minimized",
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
-            
-        except WindowNotFoundError as e:
+
+        except WindowNotFoundError:
             return {
                 "status": "error",
                 "error": f"Window with handle {handle} not found",
-                "error_type": "WindowNotFoundError"
+                "error_type": "WindowNotFoundError",
             }
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "error_type": type(e).__name__
-            }
+            return {"status": "error", "error": str(e), "error_type": type(e).__name__}
 
-    @app.tool(
-        name="restore_window",
-        description="Restores a minimized or maximized window."
-    )
-    def restore_window(handle: int) -> Dict[str, Any]:
-        """
-        Restore a window to its normal state.
+    @app.tool(name="restore_window", description="Restores a minimized or maximized window.")
+    def restore_window(handle: int) -> dict[str, Any]:
+        """Restore a window to its normal state.
 
         Args:
             handle: The window handle to restore
 
         Returns:
             Dict containing the result of the operation
+
         """
         try:
             desktop = get_desktop()
             window = desktop.window(handle=handle)
             window.restore()
-            
+
             return {
                 "status": "success",
                 "handle": handle,
                 "action": "restored",
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
-            
-        except WindowNotFoundError as e:
+
+        except WindowNotFoundError:
             return {
                 "status": "error",
                 "error": f"Window with handle {handle} not found",
-                "error_type": "WindowNotFoundError"
+                "error_type": "WindowNotFoundError",
             }
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "error_type": type(e).__name__
-            }
+            return {"status": "error", "error": str(e), "error_type": type(e).__name__}
 
-    @app.tool(
-        name="set_window_position",
-        description="Sets the position and size of a window."
-    )
-    def set_window_position(
-        handle: int,
-        x: int,
-        y: int,
-        width: int,
-        height: int
-    ) -> Dict[str, Any]:
-        """
-        Set the position and size of a window.
+    @app.tool(name="set_window_position", description="Sets the position and size of a window.")
+    def set_window_position(handle: int, x: int, y: int, width: int, height: int) -> dict[str, Any]:
+        """Set the position and size of a window.
 
         Args:
             handle: The window handle
@@ -164,12 +134,13 @@ if app is not None:
 
         Returns:
             Dict containing the result of the operation
+
         """
         try:
             desktop = get_desktop()
             window = desktop.window(handle=handle)
             window.move(x, y, width, height)
-            
+
             return {
                 "status": "success",
                 "handle": handle,
@@ -178,46 +149,39 @@ if app is not None:
                 "width": width,
                 "height": height,
                 "action": "position_set",
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
-            
-        except WindowNotFoundError as e:
+
+        except WindowNotFoundError:
             return {
                 "status": "error",
                 "error": f"Window with handle {handle} not found",
-                "error_type": "WindowNotFoundError"
+                "error_type": "WindowNotFoundError",
             }
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "error_type": type(e).__name__
-            }
+            return {"status": "error", "error": str(e), "error_type": type(e).__name__}
 
-    @app.tool(
-        name="get_active_window",
-        description="Gets the currently active window."
-    )
-    def get_active_window() -> Dict[str, Any]:
-        """
-        Get the currently active window.
+    @app.tool(name="get_active_window", description="Gets the currently active window.")
+    def get_active_window() -> dict[str, Any]:
+        """Get the currently active window.
 
         Returns:
             Dict containing information about the active window
+
         """
         try:
             desktop = get_desktop()
             window = desktop.window(active_only=True)
-            
+
             if not window.exists():
                 return {
                     "status": "error",
                     "error": "No active window found",
-                    "error_type": "NoActiveWindow"
+                    "error_type": "NoActiveWindow",
                 }
-                
+
             rect = window.rectangle()
-            
+
             return {
                 "status": "success",
                 "handle": window.handle,
@@ -231,76 +195,62 @@ if app is not None:
                     "right": rect.right,
                     "bottom": rect.bottom,
                     "width": rect.width(),
-                    "height": rect.height()
+                    "height": rect.height(),
                 },
-                "timestamp": time.time()
-            }
-            
-        except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "error_type": type(e).__name__
+                "timestamp": time.time(),
             }
 
-    @app.tool(
-        name="close_window",
-        description="Closes the specified window."
-    )
-    def close_window(handle: int) -> Dict[str, Any]:
-        """
-        Close a window.
+        except Exception as e:
+            return {"status": "error", "error": str(e), "error_type": type(e).__name__}
+
+    @app.tool(name="close_window", description="Closes the specified window.")
+    def close_window(handle: int) -> dict[str, Any]:
+        """Close a window.
 
         Args:
             handle: The window handle to close
 
         Returns:
             Dict containing the result of the operation
+
         """
         try:
             desktop = get_desktop()
             window = desktop.window(handle=handle)
             window.close()
-            
+
             return {
                 "status": "success",
                 "handle": handle,
                 "action": "closed",
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
-            
-        except WindowNotFoundError as e:
+
+        except WindowNotFoundError:
             return {
                 "status": "error",
                 "error": f"Window with handle {handle} not found",
-                "error_type": "WindowNotFoundError"
+                "error_type": "WindowNotFoundError",
             }
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "error_type": type(e).__name__
-            }
+            return {"status": "error", "error": str(e), "error_type": type(e).__name__}
 
-    @app.tool(
-        name="get_window_rect",
-        description="Gets the rectangle of a window."
-    )
-    def get_window_rect(handle: int) -> Dict[str, Any]:
-        """
-        Get the rectangle of a window.
+    @app.tool(name="get_window_rect", description="Gets the rectangle of a window.")
+    def get_window_rect(handle: int) -> dict[str, Any]:
+        """Get the rectangle of a window.
 
         Args:
             handle: The window handle
 
         Returns:
             Dict containing the window rectangle
+
         """
         try:
             desktop = get_desktop()
             window = desktop.window(handle=handle)
             rect = window.rectangle()
-            
+
             return {
                 "status": "success",
                 "handle": handle,
@@ -310,222 +260,191 @@ if app is not None:
                 "bottom": rect.bottom,
                 "width": rect.width(),
                 "height": rect.height(),
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
-            
-        except WindowNotFoundError as e:
+
+        except WindowNotFoundError:
             return {
                 "status": "error",
                 "error": f"Window with handle {handle} not found",
-                "error_type": "WindowNotFoundError"
+                "error_type": "WindowNotFoundError",
             }
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "error_type": type(e).__name__
-            }
+            return {"status": "error", "error": str(e), "error_type": type(e).__name__}
 
-    @app.tool(
-        name="get_window_title",
-        description="Gets the title of a window."
-    )
-    def get_window_title(handle: int) -> Dict[str, Any]:
-        """
-        Get the title of a window.
+    @app.tool(name="get_window_title", description="Gets the title of a window.")
+    def get_window_title(handle: int) -> dict[str, Any]:
+        """Get the title of a window.
 
         Args:
             handle: The window handle
 
         Returns:
             Dict containing the window title
+
         """
         try:
             desktop = get_desktop()
             window = desktop.window(handle=handle)
             title = window.window_text()
-            
-            return {
-                "status": "success",
-                "handle": handle,
-                "title": title,
-                "timestamp": time.time()
-            }
-            
-        except WindowNotFoundError as e:
+
+            return {"status": "success", "handle": handle, "title": title, "timestamp": time.time()}
+
+        except WindowNotFoundError:
             return {
                 "status": "error",
                 "error": f"Window with handle {handle} not found",
-                "error_type": "WindowNotFoundError"
+                "error_type": "WindowNotFoundError",
             }
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "error_type": type(e).__name__
-            }
+            return {"status": "error", "error": str(e), "error_type": type(e).__name__}
 
     @app.tool(
         name="get_window_state",
-        description="Gets the state of a window (minimized, maximized, etc.)"
+        description="Gets the state of a window (minimized, maximized, etc.)",
     )
-    def get_window_state(handle: int) -> Dict[str, Any]:
-        """
-        Get the state of a window.
+    def get_window_state(handle: int) -> dict[str, Any]:
+        """Get the state of a window.
 
         Args:
             handle: The window handle
 
         Returns:
             Dict containing the window state
+
         """
         try:
             desktop = get_desktop()
             window = desktop.window(handle=handle)
-            
+
             state = {
                 "is_maximized": window.is_maximized(),
                 "is_minimized": window.is_minimized(),
                 "is_visible": window.is_visible(),
                 "is_enabled": window.is_enabled(),
-                "has_focus": window.has_focus()
+                "has_focus": window.has_focus(),
             }
-            
-            return {
-                "status": "success",
-                "handle": handle,
-                "state": state,
-                "timestamp": time.time()
-            }
-            
-        except WindowNotFoundError as e:
+
+            return {"status": "success", "handle": handle, "state": state, "timestamp": time.time()}
+
+        except WindowNotFoundError:
             return {
                 "status": "error",
                 "error": f"Window with handle {handle} not found",
-                "error_type": "WindowNotFoundError"
+                "error_type": "WindowNotFoundError",
             }
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "error_type": type(e).__name__
-            }
+            return {"status": "error", "error": str(e), "error_type": type(e).__name__}
 
     @app.tool(
         name="set_window_foreground",
-        description="Brings a window to the foreground and activates it."
+        description="Brings a window to the foreground and activates it.",
     )
-    def set_window_foreground(handle: int) -> Dict[str, Any]:
-        """
-        Bring a window to the foreground and activate it.
+    def set_window_foreground(handle: int) -> dict[str, Any]:
+        """Bring a window to the foreground and activate it.
 
         Args:
             handle: The window handle
 
         Returns:
             Dict containing the result of the operation
+
         """
         try:
             desktop = get_desktop()
             window = desktop.window(handle=handle)
             window.set_focus()
             window.activate()
-            
+
             return {
                 "status": "success",
                 "handle": handle,
                 "action": "brought_to_foreground",
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
-            
-        except WindowNotFoundError as e:
+
+        except WindowNotFoundError:
             return {
                 "status": "error",
                 "error": f"Window with handle {handle} not found",
-                "error_type": "WindowNotFoundError"
+                "error_type": "WindowNotFoundError",
             }
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "error_type": type(e).__name__
-            }
+            return {"status": "error", "error": str(e), "error_type": type(e).__name__}
 
-    @app.tool(
-        name="get_all_windows",
-        description="Gets information about all visible windows."
-    )
-    def get_all_windows() -> Dict[str, Any]:
-        """
-        Get information about all visible windows.
+    @app.tool(name="get_all_windows", description="Gets information about all visible windows.")
+    def get_all_windows() -> dict[str, Any]:
+        """Get information about all visible windows.
 
         Returns:
             Dict containing information about all visible windows
+
         """
         try:
             desktop = get_desktop()
             windows = desktop.windows()
-            
+
             result = []
             for window in windows:
                 if not window.is_visible():
                     continue
-                    
+
                 try:
                     rect = window.rectangle()
-                    result.append({
-                        "handle": window.handle,
-                        "title": window.window_text(),
-                        "class_name": window.class_name(),
-                        "is_visible": window.is_visible(),
-                        "is_enabled": window.is_enabled(),
-                        "position": {
-                            "left": rect.left,
-                            "top": rect.top,
-                            "right": rect.right,
-                            "bottom": rect.bottom,
-                            "width": rect.width(),
-                            "height": rect.height()
+                    result.append(
+                        {
+                            "handle": window.handle,
+                            "title": window.window_text(),
+                            "class_name": window.class_name(),
+                            "is_visible": window.is_visible(),
+                            "is_enabled": window.is_enabled(),
+                            "position": {
+                                "left": rect.left,
+                                "top": rect.top,
+                                "right": rect.right,
+                                "bottom": rect.bottom,
+                                "width": rect.width(),
+                                "height": rect.height(),
+                            },
                         }
-                    })
+                    )
                 except Exception as e:
                     logger.warning(f"Error getting window info: {e}")
                     continue
-            
+
             return {
                 "status": "success",
                 "window_count": len(result),
                 "windows": result,
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
-            
+
         except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "error_type": type(e).__name__
-            }
+            return {"status": "error", "error": str(e), "error_type": type(e).__name__}
+
 
 def get_desktop():
     """Get a Desktop instance with proper error handling."""
     try:
         from pywinauto import Desktop
+
         return Desktop(backend="uia")
     except Exception as e:
         logger.error(f"Failed to get Desktop instance: {e}")
         raise
 
+
 # Add all tools to __all__
 __all__ = [
-    'maximize_window',
-    'minimize_window',
-    'restore_window',
-    'set_window_position',
-    'get_active_window',
-    'close_window',
-    'get_window_rect',
-    'get_window_title',
-    'get_window_state',
-    'set_window_foreground',
-    'get_all_windows'
+    "maximize_window",
+    "minimize_window",
+    "restore_window",
+    "set_window_position",
+    "get_active_window",
+    "close_window",
+    "get_window_rect",
+    "get_window_title",
+    "get_window_state",
+    "set_window_foreground",
+    "get_all_windows",
 ]
