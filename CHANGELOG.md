@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-01-25
+
+### Fixed
+- **Docstring Refactoring**: Fixed missing blank lines after sections (D413) across all 8 portmanteau tools.
+- **SOTA 2026 Alignment**: Standardized documentation to Jan 2026 industrial SOTA patterns.
+
+### Added
+- **Formal PRD**: Created `docs/PRD.md` to define project requirements and technical standards.
+- **Improved Grounding**: Enhanced tool documentation for better AI agent navigation.
+
+## [0.3.0] - 2025-10-08
+
 ### Added
 - Comprehensive DXT manifest with 22+ automation tools
 - Extensive prompt templates for conversational AI interaction

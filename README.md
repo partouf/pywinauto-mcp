@@ -1,336 +1,217 @@
-# PyWinAuto MCP
+# PyWinAuto MCP - Portmanteau Edition
 
-**Version 0.2.0** | **22 Comprehensive Automation Tools** | **Enterprise-Grade Windows UI Automation**
+**Version 0.3.1** | **8 Comprehensive Portmanteau Tools** | **FastMCP 2.13.1** | **SOTA 2026 Compliant**
 
-A sophisticated, FastMCP 2.10+ compliant server for Windows UI automation using PyWinAuto. Features a comprehensive tool ecosystem, face recognition security, and professional DXT packaging with extensive prompt templates for conversational AI interaction.
+A sophisticated, FastMCP 2.13.1 compliant server for Windows UI automation using PyWinAuto. Features 8 comprehensive portmanteau tools consolidating 60+ operations, face recognition security, and professional packaging.
 
-## 🚀 Features
+## 🚀 What's New in v0.3.0 - Portmanteau Edition
 
-### 🏆 **22 Comprehensive Automation Tools**
-PyWinAuto MCP provides the most complete Windows automation toolkit available:
+### Tool Consolidation
+Previous versions had 60+ individual tools scattered across multiple files with duplicates. The Portmanteau Edition consolidates everything into **8 comprehensive tools**:
 
-- **🔍 Window Management** (6 tools): Find, activate, maximize, minimize, position, and close windows
-- **🖱️ Mouse Control** (7 tools): Click, move, scroll, drag-and-drop with precision coordinates
-- **⌨️ Keyboard Input** (3 tools): Type text, send key combinations, special shortcuts
-- **🎯 UI Elements** (6 tools): Click, type, inspect, verify text, get info, check states
-- **📸 Visual Intelligence** (3 tools): Screenshots, OCR text extraction, image recognition
-- **🔒 Face Recognition** (4 tools): Add faces, recognize, list known faces, webcam verification
+| Tool | Operations | Description |
+|------|------------|-------------|
+| `automation_windows` | 11 | Window management (list, find, maximize, minimize, etc.) |
+| `automation_elements` | 14 | UI element interaction (click, hover, text, etc.) |
+| `automation_mouse` | 9 | Mouse control (move, click, scroll, drag) |
+| `automation_keyboard` | 4 | Keyboard input (type, press, hotkey) |
+| `automation_visual` | 4 | Visual operations (screenshot, OCR, find image) |
+| `automation_face` | 5 | Face recognition (add, recognize, list, delete) |
+| `automation_system` | 7 | System utilities (health, help, clipboard, processes) |
+| `get_desktop_state` | 1 | Comprehensive desktop UI element discovery |
 
-### 🤖 **Conversational AI Integration**
-- **Extensive Prompt Templates**: 100+ detailed prompts for natural language interaction
-- **Contextual Examples**: Real-world usage scenarios for each tool
-- **Smart Defaults**: Intelligent parameter handling and error recovery
-- **Desktop State Capture**: Complete UI element discovery with visual annotations
+### Benefits
+- **Reduced tool explosion**: 60+ tools → 8 tools
+- **No duplicates**: Each operation defined once
+- **Better discoverability**: Related operations grouped together
+- **FastMCP 2.13.1 compliant**: Latest features and security fixes
+- **SOTA 2026 Standard**: 100% docstring compliance (Ruff D-rules) and industrial technical documentation
 
-### 🏗️ **Enterprise Architecture**
-- **Dual Interface Design**: MCP tools + REST API with complete feature parity
-- **Security-First**: Face recognition authentication and access controls
-- **Professional Packaging**: Complete DXT distribution with all dependencies
-- **Plugin System**: Extensible architecture for custom automation tools
+## 🏆 Features
 
-### Example: Finding a Window
-
-#### Using MCP Tools (Claude/LLM)
-
+### 🔍 Window Management (`automation_windows`)
 ```python
-# Claude can call this directly as an MCP tool
-window = find_window(
-    title="Untitled - Notepad",
-    class_name="Notepad"
-)
+# List all windows
+automation_windows("list")
+
+# Find window by title
+automation_windows("find", title="Notepad", partial=True)
+
+# Maximize, minimize, restore
+automation_windows("maximize", handle=12345)
+automation_windows("minimize", handle=12345)
+automation_windows("restore", handle=12345)
+
+# Position and size
+automation_windows("position", handle=12345, x=100, y=100, width=800, height=600)
 ```
 
-#### Using REST API
+### 🎯 Element Interaction (`automation_elements`)
+```python
+# Click elements
+automation_elements("click", window_handle=12345, control_id="btnOK")
+automation_elements("double_click", window_handle=12345, control_id="listItem")
+automation_elements("right_click", window_handle=12345, x=100, y=200)
 
-```http
-GET /api/v1/windows/find?title=Untitled%20-%20Notepad&class_name=Notepad
+# Get/set text
+automation_elements("text", window_handle=12345, control_id="Edit1")
+automation_elements("set_text", window_handle=12345, control_id="Edit1", text="Hello!")
+
+# Wait and verify
+automation_elements("wait", window_handle=12345, control_id="loading", timeout=10.0)
+automation_elements("verify_text", window_handle=12345, control_id="status", expected_text="Ready")
 ```
 
-#### Response (both interfaces)
+### 🖱️ Mouse Control (`automation_mouse`)
+```python
+# Position and movement
+automation_mouse("position")
+automation_mouse("move", x=500, y=300)
+automation_mouse("move_relative", x=10, y=-5)
 
-```json
-{
-  "window_handle": 123456,
-  "title": "Untitled - Notepad",
-  "class_name": "Notepad",
-  "process_id": 9876,
-  "is_visible": true,
-  "is_enabled": true,
-  "rectangle": {
-    "left": 100,
-    "top": 100,
-    "right": 800,
-    "bottom": 600,
-    "width": 700,
-    "height": 500
-  },
-  "process_name": "notepad.exe"
-}
+# Clicking
+automation_mouse("click", x=500, y=300)
+automation_mouse("double_click", x=500, y=300)
+automation_mouse("right_click")
+
+# Scrolling and dragging
+automation_mouse("scroll", amount=3)
+automation_mouse("drag", x=100, y=100, target_x=500, target_y=300)
 ```
 
-### Core Features
+### ⌨️ Keyboard Input (`automation_keyboard`)
+```python
+# Type text
+automation_keyboard("type", text="Hello World!")
 
-- **Window Management**: Find, activate, and manipulate windows
-- **UI Automation**: Interact with controls, type text, click elements
-- **Element Inspection**: Get detailed information about UI elements
-- **Screenshots**: Capture window or element screenshots
-- **Robust Error Handling**: Built-in retry mechanisms and timeouts
-- **MCP Integration**: Seamless integration with the MCP ecosystem
+# Press keys
+automation_keyboard("press", key="enter")
+automation_keyboard("hotkey", keys=["ctrl", "c"])
+automation_keyboard("hotkey", keys=["ctrl", "shift", "s"])
+```
 
-### Plugin System
+### 📸 Visual Intelligence (`automation_visual`)
+```python
+# Screenshots
+automation_visual("screenshot")
+automation_visual("screenshot", window_handle=12345, return_base64=True)
 
-- **Modular Architecture**: Extend functionality through plugins
-- **Built-in Plugins**:
-  - **OCR**: Text extraction from images and windows
-  - **Security**: Application monitoring and access control
-- **Easy to Extend**: Create custom plugins for specialized automation needs
+# OCR text extraction
+automation_visual("extract_text", image_path="screen.png")
+
+# Find image on screen
+automation_visual("find_image", template_path="button.png", threshold=0.8)
+```
+
+### 🔒 Face Recognition (`automation_face`)
+```python
+# Add and recognize faces
+automation_face("add", name="John Doe", image_path="john.jpg")
+automation_face("recognize", image_path="unknown.jpg")
+
+# List and manage
+automation_face("list")
+automation_face("delete", name="John Doe")
+
+# Webcam capture
+automation_face("capture", camera_index=0)
+```
+
+### ⚙️ System Utilities (`automation_system`)
+```python
+# Health and help
+automation_system("health")
+automation_system("help")
+
+# Wait operations
+automation_system("wait", seconds=2.5)
+automation_system("wait_for_window", title="Notepad", timeout=10.0)
+
+# Clipboard
+automation_system("clipboard_get")
+automation_system("clipboard_set", text="Copied!")
+
+# Process list
+automation_system("process_list")
+```
+
+### 📊 Desktop State Capture
+```python
+# Basic UI discovery
+get_desktop_state()
+
+# With visual annotations
+get_desktop_state(use_vision=True)
+
+# With OCR text extraction
+get_desktop_state(use_ocr=True)
+
+# Full analysis
+get_desktop_state(use_vision=True, use_ocr=True, max_depth=15)
+```
 
 ## 🛠 Installation
 
-1. **Prerequisites**:
-   - Windows 10/11
-   - Python 3.10+
-   - Microsoft UI Automation (UIA) support
+### Prerequisites
+- Windows 10/11
+- Python 3.10+
+- Microsoft UI Automation (UIA) support
 
-2. **Install from source**:
+### Install from source
 
-   ```powershell
-   # Clone the repository
-   git clone https://github.com/sandraschi/pywinauto-mcp.git
-   cd pywinauto-mcp
-   
-   # Create and activate a virtual environment
-   python -m venv venv
-   .\venv\Scripts\Activate.ps1
-   
-   # Install with all dependencies (including OCR and security plugins)
-   pip install -e ".[all]"
+```powershell
+# Clone the repository
+git clone https://github.com/sandraschi/pywinauto-mcp.git
+cd pywinauto-mcp
 
-   # Or install only core dependencies
-   # pip install -e .
-   ```
+# Create and activate a virtual environment
+python -m venv venv
+.\venv\Scripts\Activate.ps1
 
-3. **Install Tesseract OCR** (required for OCR plugin):
+# Install core package
+pip install -e .
 
-   - Download and install Tesseract from [UB Mannheim](https://github.com/UB-Mannheim/tesseract/wiki)
-   - Add Tesseract to your system PATH
+# Install with face recognition
+pip install -e ".[face]"
+
+# Install with all dependencies (including dev tools)
+pip install -e ".[all]"
+```
+
+### Install Tesseract OCR (for OCR features)
+Download and install Tesseract from [UB Mannheim](https://github.com/UB-Mannheim/tesseract/wiki)
 
 ## 🚀 Quick Start
 
-### Option 1: DXT Package (Recommended)
+### Start the MCP Server
 
-1. **Install the DXT CLI**:
+```powershell
+# Direct run
+python -m pywinauto_mcp
 
-   ```bash
-   npm install -g @anthropic-ai/dxt
-   ```
-
-2. **Download the latest DXT package** from the [releases page](https://github.com/sandraschi/pywinauto-mcp/releases)
-
-3. **Install the DXT package**:
-
-   ```bash
-   dxt install dist/pywinauto-mcp-0.2.0.dxt
-   ```
-
-   **Package Features:**
-   - **281KB comprehensive package** with all dependencies
-   - **23 automation tools** across 7 categories (including Desktop State Capture)
-   - **100+ prompt templates** for conversational AI
-   - **Face recognition security** and webcam integration
-   - **OCR and visual intelligence** capabilities
-   - **Complete desktop UI analysis** with element discovery
-
-4. **Start the server**:
-
-   ```bash
-   dxt run pywinauto-mcp
-   ```
-
-### Option 2: From Source
-
-1. **Start the MCP server**:
-
-   ```powershell
-   uvicorn pywinauto_mcp.main:app --reload
-   ```
-
-2. **Example: Find and interact with Notepad**
-
-   ```powershell
-   # Find Notepad window
-   $window = Invoke-RestMethod -Uri "http://localhost:8000/api/v1/windows/find" -Method Post -Body (@{title="Untitled - Notepad"; timeout=5} | ConvertTo-Json) -ContentType "application/json"
-   
-   # Type some text
-   Invoke-RestMethod -Uri "http://localhost:8000/api/v1/element/type" -Method Post -Body (@{
-       window_id = $window.window_handle
-       control_id = "Edit"
-       text = "Hello from PyWinAuto MCP!"
-   } | ConvertTo-Json) -ContentType "application/json"
-   ```
-
-## 🛠️ **Tool Discovery & Help**
-
-PyWinAuto MCP includes a comprehensive help system to discover and understand all available tools:
-
-#### Get Help Tool
-```python
-# Get overview of all tools
-help_info = get_help()
-
-# Get tools by category
-window_tools = get_help(category="windows")
-
-# Get detailed tool information
-click_details = get_help(tool_name="click_element")
+# Or using the entry point
+pywinauto-mcp
 ```
 
-#### Tool Categories
-- **System Tools** (4): Health checks, clipboard, timing
-- **Window Management** (6): Find, manipulate, and control windows
-- **UI Elements** (6): Click, type, inspect, and interact with controls
-- **Mouse Control** (7): Precise cursor movement and clicking
-- **Keyboard Input** (3): Text input and key combinations
-- **Visual Intelligence** (3): Screenshots, OCR, image recognition
-- **Face Recognition** (4): Security authentication features
-- **Desktop State** (1): Complete UI analysis and discovery
+### Claude Desktop Configuration
 
-### 📊 **Desktop State Capture - Revolutionary Deep UI Analysis**
+Add to your Claude Desktop `claude_desktop_config.json`:
 
-The `get_desktop_state` tool provides **revolutionary deep UI introspection** capabilities, going far beyond traditional window enumeration to analyze the internal state of complex applications including development environments.
-
-**🚀 Revolutionary Capabilities**:
-- **Deep IDE Inspection**: Analyzes open Cursor/VSCode instances, discovering file contents, linter errors, and development status
-- **Complete UI Analysis**: Discovers all interactive and informative elements across the entire desktop
-- **Development Environment Awareness**: Identifies open repositories, current files, error states, and project status
-- **Visual Annotations**: Color-coded element boundaries on screenshots with intelligent highlighting
-- **OCR Enhancement**: Extracts text from visual elements that standard APIs can't access
-- **Real-time Development Status**: Monitors coding activity, error detection, and project health
-
-**Usage Examples**:
-```python
-# Basic UI discovery
-state = get_desktop_state()
-print(f"Found {state['element_count']} elements")
-
-# Development environment analysis - discovers open IDEs and errors
-dev_state = get_desktop_state(max_depth=15)
-for element in dev_state['interactive_elements']:
-    if 'cursor' in element['app'].lower() or 'vscode' in element['app'].lower():
-        print(f"IDE Element: {element['name']} in {element['app']}")
-
-# Fast IDE analysis (20-45 seconds)
-state = get_desktop_state(max_depth=15, element_timeout=0.2)
-# Quick scan of development environments
-
-# With visual annotations - highlights development errors and status
-state = get_desktop_state(use_vision=True, element_timeout=0.3)
-# Includes base64-encoded annotated screenshot with error highlighting
-
-# Complete analysis with OCR - reads error messages and code content
-state = get_desktop_state(use_vision=True, use_ocr=True, max_depth=20, element_timeout=0.5)
-# Extracts text from linter errors, terminal output, and code editors
-# ⚠️ Note: Deep analysis may take 1-3 minutes for comprehensive results
+```json
+{
+  "mcpServers": {
+    "pywinauto": {
+      "command": "python",
+      "args": ["-m", "pywinauto_mcp"],
+      "cwd": "D:\\Dev\\repos\\pywinauto-mcp"
+    }
+  }
+}
 ```
-
-📖 **[Complete Desktop State Tool Documentation](docs/desktop-state-tool.md)**
-
-## 🧩 Plugin System
-
-PyWinAuto MCP uses a modular plugin system to extend its functionality. Plugins can be enabled/disabled via configuration.
-
-### Available Plugins
-
-#### OCR Plugin
-
-Extract text from windows and images using Tesseract OCR.
-
-**Features**:
-
-- Extract text from any window or image
-- Find text positions within images
-- Support for multiple languages
-- Region-based text extraction
-
-**Example**:
-
-```python
-# Extract text from a window region
-text = await mcp.extract_text(
-    window_handle=window_handle,
-    x=100, y=100, width=200, height=50,
-    lang="eng"
-)
-```
-
-#### Security Plugin
-
-Monitor applications and detect unauthorized access.
-
-**Features**:
-
-- Application whitelisting/blacklisting
-- Unauthorized access detection
-- Activity logging
-- Configurable alerts
-
-### Creating Custom Plugins
-
-1. Create a new Python module in `src/pywinauto_mcp/plugins/`
-2. Create a class that inherits from `PyWinAutoPlugin`
-3. Implement the required methods
-4. Register your plugin using the `@register_plugin` decorator
-
-**Example Plugin**:
-
-```python
-from pywinauto_mcp.core.plugin import PyWinAutoPlugin, register_plugin
-
-@register_plugin
-class MyCustomPlugin(PyWinAutoPlugin):
-    @classmethod
-    def get_name(cls) -> str:
-        return "my_plugin"
-
-    def register_tools(self):
-        @self.app.mcp.tool("my_tool")
-        async def my_tool(param: str):
-            return {"result": f"Processed: {param}"}
-```
-
-## 📚 API Documentation
-
-### Windows
-
-- `POST /api/v1/windows/find` - Find a window by attributes
-- `GET /api/v1/windows` - List all top-level windows
-- `GET /api/v1/windows/{handle}` - Get window details
-- `POST /api/v1/windows/{handle}/activate` - Activate a window
-- `POST /api/v1/windows/{handle}/close` - Close a window
-
-### Elements
-
-- `POST /api/v1/element/click` - Click an element
-- `POST /api/v1/element/type` - Type text into an element
-- `POST /api/v1/element/get` - Get element information
-- `POST /api/v1/element/screenshot` - Take a screenshot of an element
-
-### Desktop State
-
-- `POST /api/v1/desktop_state/capture` - Capture complete desktop state with UI elements
-  - Optional: `use_vision=true` for annotated screenshots
-  - Optional: `use_ocr=true` for text extraction from elements
-  - Optional: `max_depth=10` for UI tree traversal depth
 
 ## 🔧 Configuration
 
-### DXT Configuration
-
-When using the DXT package, create a `.env` file in the DXT package directory (typically in `~/.dxt/packages/pywinauto-mcp/.env` on Linux/macOS or `%USERPROFILE%\.dxt\packages\pywinauto-mcp\.env` on Windows).
-
-### Local Development
-
-For local development, create a `.env` file in the project root:
+Create a `.env` file in the project root:
 
 ```ini
 # Server Configuration
@@ -347,71 +228,45 @@ RETRY_DELAY=1.0
 FACE_RECOGNITION_TOLERANCE=0.6
 FACE_RECOGNITION_MODEL=hog
 
-# Security Settings
-SECURITY_ALERT_EMAIL=alerts@example.com
-SECURITY_WEBHOOK_URL=
-
 # Screenshot Settings
 SCREENSHOT_DIR=./screenshots
 SCREENSHOT_FORMAT=png
 ```
 
-## 🔒 Security Features
+## 📚 Architecture
 
-### Face Recognition
+### Portmanteau Pattern
 
-```python
-# Enroll a new face
-curl -X POST "http://localhost:8000/face-recognition/enroll" \
-     -H "Content-Type: multipart/form-data" \
-     -F "name=John Doe" \
-     -F "image_file=@john.jpg"
+The Portmanteau Edition follows FastMCP 2.13+ best practices:
 
-# Verify face using webcam
-curl -X POST "http://localhost:8000/face-recognition/verify/webcam?confidence_threshold=0.7"
-
-# List known faces
-curl "http://localhost:8000/face-recognition/faces"
+```
+pywinauto_mcp/
+├── app.py                    # FastMCP app instance
+├── main.py                   # Entry point
+└── tools/
+    ├── __init__.py           # Tool registration
+    ├── portmanteau_windows.py    # Window management
+    ├── portmanteau_elements.py   # UI elements
+    ├── portmanteau_mouse.py      # Mouse control
+    ├── portmanteau_keyboard.py   # Keyboard input
+    ├── portmanteau_visual.py     # Visual/OCR
+    ├── portmanteau_face.py       # Face recognition
+    ├── portmanteau_system.py     # System utilities
+    ├── desktop_state.py          # Desktop state (standalone)
+    └── archived/                 # Legacy tools (preserved)
 ```
 
-### Security Monitoring
+### Why Portmanteau?
 
-```python
-# Monitor sensitive applications
-curl -X POST "http://localhost:8000/security/monitor/apps/start" \
-     -H "Content-Type: application/json" \
-     -d '{"app_names": ["banking_app.exe"], "webcam_required": true}'
-
-# Start intruder detection
-curl -X POST "http://localhost:8000/security/monitor/intruder/start" \
-     -H "Content-Type: application/json" \
-     -d '{"sensitivity": 0.8, "alert_contacts": ["security@example.com"]}'
-```
+1. **Prevents tool explosion**: Instead of 60+ tools, 8 comprehensive tools
+2. **Better discoverability**: Related operations grouped logically
+3. **Reduced cognitive load**: Fewer tools to remember
+4. **Consistent interface**: Each tool follows the same pattern
+5. **Easier maintenance**: Changes in one place affect all operations
 
 ## 🤝 Contributing
 
-We welcome contributions! PyWinAuto MCP has comprehensive contribution guidelines and a structured process:
-
-### 📋 **Getting Started**
-- 📖 **[Contributing Guide](CONTRIBUTING.md)**: Complete development workflow and guidelines
-- 🐛 **[Issue Templates](.github/ISSUE_TEMPLATE/)**: Structured bug reports and feature requests
-- 🔄 **CI/CD Pipeline**: Automated testing and quality assurance
-
-### 🛠️ **Development Workflow**
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/your-feature`)
-3. **Develop** following our coding standards
-4. **Test** your changes thoroughly
-5. **Submit** a pull request with detailed description
-
-### 📚 **Documentation**
-- 📋 **[Status Report](docs/STATUS_REPORT.md)**: Comprehensive project assessment and roadmap
-- 📝 **[API Documentation](docs/)**: Technical documentation and guides
-- 🔄 **[Changelog](CHANGELOG.md)**: Version history and release notes
-
-### 🤝 **Community Standards**
-- 📜 **[Code of Conduct](CODE_OF_CONDUCT.md)**: Community guidelines and expectations
-- 🔒 **[Security Policy](SECURITY.md)**: Vulnerability reporting and security features
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development workflow and guidelines.
 
 ## 📄 License
 
@@ -419,5 +274,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- [PyWinAuto](https://pywinauto.github.io/) for the excellent Windows automation library
-- [FastMCP](https://github.com/wandb/fastmcp) for the MCP server framework
+- [PyWinAuto](https://pywinauto.github.io/) for Windows automation
+- [FastMCP](https://github.com/jlowin/fastmcp) for the MCP server framework
+- [Advanced Memory MCP](https://github.com/sandraschi/advanced-memory-mcp) for portmanteau pattern inspiration
