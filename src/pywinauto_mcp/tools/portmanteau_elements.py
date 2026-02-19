@@ -169,11 +169,18 @@ if app is not None:
         name="automation_elements",
         description="""Comprehensive UI element interaction tool for Windows automation.
 
+WINDOW SELECTION:
+Specify the parent window using EITHER:
+- window_handle: Direct HWND integer (precise, no lookup needed)
+- window_title: Window title text (exact match, case-insensitive)
+
+Using window_title lets you skip the window discovery step entirely.
+
 ELEMENT SELECTION:
 Elements can be targeted using any combination of these selectors:
 - control_id: Win32 or symbolic control identifier
 - auto_id: UIA AutomationId for precise targeting
-- title: Element name/title text (human-readable label)
+- title: Element name/caption text (human-readable label)
 - class_name: Windows class name
 - control_type: UI role (e.g., "Button", "Edit", "ComboBox")
 
@@ -198,10 +205,13 @@ SUPPORTED OPERATIONS:
 - list: Get all elements in window (with depth control)
 
 Examples:
-    # Target by title (no need to discover control_id first)
-    automation_elements("set_text", window_handle=12345, title="Username", text="admin")
-    automation_elements("set_text", window_handle=12345, title="Password", text="secret")
-    automation_elements("click", window_handle=12345, title="Login")
+    # Click a button by caption - just window title + button title
+    automation_elements("click", window_title="Login", title="OK")
+
+    # Fill a form by window title (no handle needed)
+    automation_elements("set_text", window_title="Login", title="Username", text="admin")
+    automation_elements("set_text", window_title="Login", title="Password", text="secret")
+    automation_elements("click", window_title="Login", title="Login")
 
     # Target by automation id
     automation_elements("click", window_handle=12345, auto_id="btnSubmit")
@@ -210,11 +220,11 @@ Examples:
     automation_elements("click", window_handle=12345, control_id="btnOK")
 
     # Combine selectors for precision
-    automation_elements("set_text", window_handle=12345,
+    automation_elements("set_text", window_title="MyApp",
         title="Name", control_type="Edit", text="Hello")
 
     # List all elements (for discovery when selectors are unknown)
-    automation_elements("list", window_handle=12345, max_depth=3)
+    automation_elements("list", window_title="MyApp", max_depth=3)
 
 """,
     )
@@ -236,6 +246,7 @@ Examples:
             "list",
         ],
         window_handle: int | None = None,
+        window_title: str | None = None,
         control_id: str | int | None = None,
         auto_id: str | None = None,
         title: str | None = None,
@@ -293,6 +304,8 @@ Examples:
         Args:
             operation (str, required): The element interaction to perform.
             window_handle (int | None): Parent window identifier (HWND).
+            window_title (str | None): Parent window title (exact, case-insensitive).
+                Use this instead of window_handle to skip the window discovery step.
             control_id (str | int | None): Win32 or symbolic control identifier.
             auto_id (str | None): AutomationID for UIA-based element selection.
             title (str | None): Plaintext title or name of the target element.
@@ -317,13 +330,29 @@ Examples:
             timestamp = time.time()
             desktop = _get_desktop()
 
+            # === RESOLVE WINDOW: by handle or by title ===
+            if window_handle is None and window_title is not None:
+                for w in desktop.windows():
+                    try:
+                        if w.window_text().lower() == window_title.lower():
+                            window_handle = w.handle
+                            break
+                    except Exception:
+                        continue
+                if window_handle is None:
+                    return {
+                        "status": "error",
+                        "operation": operation,
+                        "error": f"No window found with title '{window_title}'",
+                    }
+
             # === LIST OPERATION (doesn't require control_id) ===
             if operation == "list":
                 if window_handle is None:
                     return {
                         "status": "error",
                         "operation": "list",
-                        "error": "window_handle parameter is required",
+                        "error": "window_handle or window_title parameter is required",
                     }
 
                 window = desktop.window(handle=window_handle)
@@ -365,7 +394,7 @@ Examples:
                 return {
                     "status": "error",
                     "operation": operation,
-                    "error": "window_handle parameter is required",
+                    "error": "window_handle or window_title parameter is required",
                 }
 
             window = desktop.window(handle=window_handle)
