@@ -7,7 +7,7 @@ try:
 except ImportError:
     from pydantic import BaseSettings
 
-from pydantic import validator
+from pydantic import field_validator
 
 
 class Settings(BaseSettings):
@@ -52,8 +52,9 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
         case_sensitive = True
 
-    @validator("SCREENSHOT_DIR", pre=True)
-    def create_screenshot_dir(self, v):
+    @field_validator("SCREENSHOT_DIR", mode="before")
+    @classmethod
+    def create_screenshot_dir(cls, v):
         """Create screenshot directory if it doesn't exist."""
         path = Path(v)
         path.mkdir(parents=True, exist_ok=True)

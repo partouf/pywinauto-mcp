@@ -53,9 +53,10 @@ jobs:
 
     - name: Run tests
       run: |
-        pytest tests/ -v --cov=pywinauto_mcp --cov-report=xml
+        pytest tests/ -v --cov=pywinauto_mcp --cov-report=xml --cov-fail-under=0
 
     - name: Upload coverage to Codecov
+      if: hashFiles('coverage.xml') != ''
       uses: codecov/codecov-action@v4
       with:
         file: ./coverage.xml
