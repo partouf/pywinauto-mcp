@@ -103,6 +103,6 @@ jobs:
     - name: Create GitHub release assets
       uses: softprops/action-gh-release@v1
       with:
-        files: *.dxt
+        files: "*.dxt"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
