@@ -1,5 +1,7 @@
 """Desktop State Formatter - Format desktop state into structured output."""
 
+from __future__ import annotations
+
 from PIL import Image
 
 from .walker import UIElementWalker
