@@ -3,6 +3,7 @@ API v1 Router for PyWinAutoMCP.
 
 This module contains all API routes for version 1 of the PyWinAutoMCP API.
 """
+
 from fastapi import APIRouter
 
 # Import all endpoint modules

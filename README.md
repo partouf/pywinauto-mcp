@@ -234,6 +234,7 @@ PORT=8000
 LOG_LEVEL=INFO
 
 # PyWinAuto Settings
+PYWINAUTO_BACKEND=uia  # "uia" (UI Automation/COM) or "win32" (native Win32 API)
 TIMEOUT=10.0
 RETRY_ATTEMPTS=3
 RETRY_DELAY=1.0

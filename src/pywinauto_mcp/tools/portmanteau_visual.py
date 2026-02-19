@@ -26,6 +26,8 @@ import cv2
 import numpy as np
 from PIL import Image, ImageGrab
 
+from pywinauto_mcp.config import settings
+
 # Import the FastMCP app instance
 try:
     from pywinauto_mcp.app import app
@@ -366,7 +368,7 @@ Examples:
 
                 from pywinauto import Desktop
 
-                desktop = Desktop(backend="uia")
+                desktop = Desktop(backend=settings.PYWINAUTO_BACKEND)
                 window = desktop.window(handle=window_handle)
                 element = window.child_window(control_id=control_id)
 

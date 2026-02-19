@@ -23,6 +23,7 @@ from pathlib import Path
 try:
     import pytesseract
     from PIL import Image, ImageGrab
+
     OCR_AVAILABLE = True
 except ImportError:
     OCR_AVAILABLE = False
@@ -37,32 +38,31 @@ from pywinauto.timings import TimeoutError as PywinautoTimeoutError
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[
         logging.StreamHandler(sys.stderr),
-        logging.FileHandler('pywinauto-mcp.log', encoding='utf-8')
-    ]
+        logging.FileHandler("pywinauto-mcp.log", encoding="utf-8"),
+    ],
 )
 
 logger = logging.getLogger(__name__)
 
 # Initialize FastMCP app - FIXED: Removed 'description' parameter for 2.12+
-app = FastMCP(
-    name="pywinauto-mcp",
-    version="0.1.0"
-)
+app = FastMCP(name="pywinauto-mcp", version="0.1.0")
 
 # Import all tools modules for dynamic registration
 from .tools import mouse, element_tools, system_tools, visual_tools, element, input, visual, window
 
+
 # Function to register all tools from a module
 def register_tools_from_module(module):
     """Register all tools from a module using FastMCP app.tool() decorator."""
-    for tool_name in getattr(module, '__all__', []):
+    for tool_name in getattr(module, "__all__", []):
         tool_func = getattr(module, tool_name)
         if callable(tool_func):
             app.tool()(tool_func)
             logger.info(f"Registered tool: {tool_name}")
+
 
 # Register all tools from all modules
 register_tools_from_module(mouse)
@@ -79,6 +79,7 @@ logger.info("All tools registered successfully with FastMCP 2.12+")
 
 class Rectangle(BaseModel):
     """Rectangle coordinates and dimensions."""
+
     left: int = Field(..., description="Left coordinate", ge=0)
     top: int = Field(..., description="Top coordinate", ge=0)
     right: int = Field(..., description="Right coordinate", ge=0)
@@ -89,6 +90,7 @@ class Rectangle(BaseModel):
 
 class WindowInfo(BaseModel):
     """Information about a window."""
+
     window_handle: int = Field(..., description="Unique window handle", gt=0)
     title: str = Field(..., description="Window title", max_length=1024)
     class_name: str = Field(..., description="Window class name", max_length=256)
@@ -108,21 +110,23 @@ class HealthStatus(str, Enum):
 def health_check() -> Dict[str, Any]:
     """
     Check the health status of the PyWinAuto MCP server.
-    
+
     Returns:
         Dict containing service status, version, and system information
     """
     try:
         import platform
+
         try:
             import psutil
+
             cpu_usage = psutil.cpu_percent()
             memory_usage = psutil.virtual_memory().percent
-            disk_usage = psutil.disk_usage('/').percent
+            disk_usage = psutil.disk_usage("/").percent
             uptime = time.time() - psutil.boot_time()
         except ImportError:
             cpu_usage = memory_usage = disk_usage = uptime = 0
-        
+
         system_info = {
             "status": HealthStatus.OK,
             "service": "pywinauto-mcp",
@@ -134,29 +138,26 @@ def health_check() -> Dict[str, Any]:
                 "cpu_usage": cpu_usage,
                 "memory_usage": memory_usage,
                 "disk_usage": disk_usage,
-                "uptime": uptime
+                "uptime": uptime,
             },
             "dependencies": {
                 "fastmcp": "2.12.0",
                 "pywinauto": "0.6.8",
                 "pydantic": "2.0.0",
                 "opencv-python": "4.8.0",
-                "pytesseract": "0.3.10"
+                "pytesseract": "0.3.10",
             },
-            "services": {
-                "ocr_available": OCR_AVAILABLE,
-                "windows_automation": True
-            }
+            "services": {"ocr_available": OCR_AVAILABLE, "windows_automation": True},
         }
-        
+
         return system_info
-        
+
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         return {
             "status": HealthStatus.ERROR,
             "error": str(e),
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
 
@@ -165,12 +166,12 @@ def find_window(
     title: Optional[str] = None,
     class_name: Optional[str] = None,
     process_id: Optional[int] = None,
-    timeout: float = 10.0
+    timeout: float = 10.0,
 ) -> Dict[str, Any]:
     """Find a window by its attributes."""
     start_time = time.time()
     last_error = None
-    
+
     while time.time() - start_time < timeout:
         try:
             criteria = {}
@@ -180,14 +181,14 @@ def find_window(
                 criteria["class_name"] = class_name
             if process_id:
                 criteria["process"] = process_id
-                
+
             if not criteria:
                 raise ValueError("At least one search criteria must be provided")
-                
+
             try:
                 handle = findwindows.find_window(**criteria)
                 window = Desktop(backend="uia").window(handle=handle)
-                
+
                 rect = window.rectangle()
                 window_info = WindowInfo(
                     window_handle=handle,
@@ -202,35 +203,26 @@ def find_window(
                         right=rect.right,
                         bottom=rect.bottom,
                         width=rect.width(),
-                        height=rect.height()
-                    )
+                        height=rect.height(),
+                    ),
                 )
-                
-                return {
-                    "status": "success",
-                    "result": window_info.model_dump()
-                }
-                
+
+                return {"status": "success", "result": window_info.model_dump()}
+
             except findwindows.WindowNotFoundError as e:
                 last_error = e
                 time.sleep(0.5)
                 continue
-                
+
         except Exception as e:
             logger.error(f"Error finding window: {e}")
-            return {
-                "status": "error",
-                "error": str(e)
-            }
-    
+            return {"status": "error", "error": str(e)}
+
     error_msg = f"Timed out after {timeout} seconds while trying to find window"
     if last_error:
         error_msg += f". Last error: {str(last_error)}"
-        
-    return {
-        "status": "error",
-        "error": error_msg
-    }
+
+    return {"status": "error", "error": error_msg}
 
 
 @app.tool()
@@ -238,72 +230,63 @@ def click_element(
     window_handle: int,
     control_id: Optional[str] = None,
     title: Optional[str] = None,
-    button: str = "left"
+    button: str = "left",
 ) -> Dict[str, Any]:
     """Click on a UI element in the specified window."""
     try:
         window = Desktop(backend="uia").window(handle=window_handle)
-        
+
         if control_id:
             element = window.child_window(auto_id=control_id)
         elif title:
             element = window.child_window(title=title)
         else:
             element = window
-            
+
         if not element.exists():
             raise ValueError(f"Element not found: control_id={control_id}, title={title}")
-            
+
         element.click(button=button)
-        
+
         return {
-            "success": True, 
+            "success": True,
             "message": "Click performed successfully",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
-        
+
     except Exception as e:
         logger.exception("Error clicking element")
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        return {"success": False, "error": str(e)}
 
 
 @app.tool()
 def type_text(
-    window_handle: int,
-    text: str,
-    control_id: Optional[str] = None,
-    title: Optional[str] = None
+    window_handle: int, text: str, control_id: Optional[str] = None, title: Optional[str] = None
 ) -> Dict[str, Any]:
     """Type text into a window or control."""
     try:
         window = Desktop(backend="uia").window(handle=window_handle)
-        
+
         if control_id or title:
             element = window.child_window(auto_id=control_id, title=title)
         else:
             element = window
-            
+
         if not element.exists():
             raise ValueError(f"Element not found: control_id={control_id}, title={title}")
-            
+
         element.type_keys(text)
-        
+
         return {
-            "success": True, 
+            "success": True,
             "message": "Text typed successfully",
             "timestamp": datetime.utcnow().isoformat(),
-            "text_length": len(text)
+            "text_length": len(text),
         }
-        
+
     except Exception as e:
         logger.exception("Error typing text")
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        return {"success": False, "error": str(e)}
 
 
 @app.tool()
@@ -312,7 +295,7 @@ def list_windows() -> Dict[str, Any]:
     try:
         desktop = Desktop(backend="uia")
         windows = []
-        
+
         for window in desktop.windows():
             try:
                 if window.is_visible():
@@ -328,53 +311,44 @@ def list_windows() -> Dict[str, Any]:
                             "right": rect.right,
                             "bottom": rect.bottom,
                             "width": rect.width(),
-                            "height": rect.height()
-                        }
+                            "height": rect.height(),
+                        },
                     }
                     windows.append(window_info)
             except Exception:
                 # Skip windows that can't be accessed
                 continue
-        
-        return {
-            "status": "success",
-            "windows": windows,
-            "count": len(windows)
-        }
-        
+
+        return {"status": "success", "windows": windows, "count": len(windows)}
+
     except Exception as e:
         logger.exception("Error listing windows")
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+        return {"status": "error", "error": str(e)}
 
 
 @app.tool()
 def get_element_info(
-    window_handle: int,
-    control_id: Optional[str] = None,
-    title: Optional[str] = None
+    window_handle: int, control_id: Optional[str] = None, title: Optional[str] = None
 ) -> Dict[str, Any]:
     """Get detailed information about a UI element."""
     try:
         window = Desktop(backend="uia").window(handle=window_handle)
-        
+
         if control_id or title:
             element = window.child_window(auto_id=control_id, title=title)
         else:
             element = window
-            
+
         if not element.exists():
             raise ValueError(f"Element not found: control_id={control_id}, title={title}")
-        
+
         rect = element.rectangle()
         element_info = {
             "handle": element.handle,
             "title": element.window_text(),
             "class_name": element.class_name(),
-            "control_type": getattr(element.element_info, 'control_type', 'unknown'),
-            "automation_id": getattr(element.element_info, 'automation_id', ''),
+            "control_type": getattr(element.element_info, "control_type", "unknown"),
+            "automation_id": getattr(element.element_info, "automation_id", ""),
             "is_visible": element.is_visible(),
             "is_enabled": element.is_enabled(),
             "has_keyboard_focus": element.has_keyboard_focus(),
@@ -386,22 +360,16 @@ def get_element_info(
                 "right": rect.right,
                 "bottom": rect.bottom,
                 "width": rect.width(),
-                "height": rect.height()
+                "height": rect.height(),
             },
-            "children_count": len(element.children())
+            "children_count": len(element.children()),
         }
-        
-        return {
-            "status": "success",
-            "element": element_info
-        }
-        
+
+        return {"status": "success", "element": element_info}
+
     except Exception as e:
         logger.exception("Error getting element info")
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+        return {"status": "error", "error": str(e)}
 
 
 @app.tool()
@@ -409,23 +377,23 @@ def extract_text(
     window_handle: int,
     control_id: Optional[str] = None,
     title: Optional[str] = None,
-    use_ocr: bool = False
+    use_ocr: bool = False,
 ) -> Dict[str, Any]:
     """Extract text from a window or UI element using pywinauto or OCR."""
     try:
         window = Desktop(backend="uia").window(handle=window_handle)
-        
+
         if control_id or title:
             element = window.child_window(auto_id=control_id, title=title)
         else:
             element = window
-            
+
         if not element.exists():
             return {
                 "status": "error",
-                "error": f"Element not found: control_id={control_id}, title={title}"
+                "error": f"Element not found: control_id={control_id}, title={title}",
             }
-        
+
         # Try to get text using pywinauto first
         try:
             text_content = element.window_text()
@@ -434,18 +402,18 @@ def extract_text(
                     "status": "success",
                     "text": text_content,
                     "method": "pywinauto",
-                    "length": len(text_content)
+                    "length": len(text_content),
                 }
         except Exception as e:
             logger.debug(f"PyWinAuto text extraction failed: {e}")
-        
+
         # If OCR is requested and available, try OCR
         if use_ocr and OCR_AVAILABLE:
             try:
                 rect = element.rectangle()
                 screenshot = ImageGrab.grab((rect.left, rect.top, rect.right, rect.bottom))
                 ocr_text = pytesseract.image_to_string(screenshot)
-                
+
                 return {
                     "status": "success",
                     "text": ocr_text.strip(),
@@ -455,12 +423,12 @@ def extract_text(
                         "left": rect.left,
                         "top": rect.top,
                         "right": rect.right,
-                        "bottom": rect.bottom
-                    }
+                        "bottom": rect.bottom,
+                    },
                 }
             except Exception as e:
                 logger.error(f"OCR text extraction failed: {e}")
-        
+
         # Try to get accessible text from children
         try:
             all_text = []
@@ -471,7 +439,7 @@ def extract_text(
                         all_text.append(child_text.strip())
                 except Exception:
                     continue
-            
+
             if all_text:
                 combined_text = "\n".join(all_text)
                 return {
@@ -479,25 +447,22 @@ def extract_text(
                     "text": combined_text,
                     "method": "children_text",
                     "length": len(combined_text),
-                    "children_count": len(all_text)
+                    "children_count": len(all_text),
                 }
         except Exception as e:
             logger.debug(f"Children text extraction failed: {e}")
-        
+
         return {
             "status": "warning",
             "text": "",
             "message": "No text could be extracted from the element",
             "ocr_available": OCR_AVAILABLE,
-            "suggestion": "Try using use_ocr=True if OCR is available"
+            "suggestion": "Try using use_ocr=True if OCR is available",
         }
-        
+
     except Exception as e:
         logger.exception("Error extracting text")
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+        return {"status": "error", "error": str(e)}
 
 
 @app.tool()
@@ -508,19 +473,19 @@ def extract_region(
     bottom: int,
     use_ocr: bool = True,
     save_screenshot: bool = False,
-    output_path: Optional[str] = None
+    output_path: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Extract text or capture a screenshot from a specific screen region."""
     try:
         if left >= right or top >= bottom:
             return {
                 "status": "error",
-                "error": "Invalid region coordinates: left must be < right and top must be < bottom"
+                "error": "Invalid region coordinates: left must be < right and top must be < bottom",
             }
-        
+
         # Capture the region
         screenshot = ImageGrab.grab((left, top, right, bottom))
-        
+
         result = {
             "status": "success",
             "region": {
@@ -529,20 +494,20 @@ def extract_region(
                 "right": right,
                 "bottom": bottom,
                 "width": right - left,
-                "height": bottom - top
+                "height": bottom - top,
             },
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
-        
+
         # Save screenshot if requested
         if save_screenshot:
             if not output_path:
                 output_path = f"screenshot_{int(time.time())}.png"
-            
+
             screenshot.save(output_path)
             result["screenshot_path"] = output_path
             result["screenshot_saved"] = True
-        
+
         # Extract text using OCR if available and requested
         if use_ocr and OCR_AVAILABLE:
             try:
@@ -559,24 +524,22 @@ def extract_region(
             result["ocr_used"] = False
         else:
             result["ocr_used"] = False
-        
+
         # Convert screenshot to base64 for embedding (optional)
         if not save_screenshot:  # Only if we're not saving to disk
             import io
+
             buffer = io.BytesIO()
-            screenshot.save(buffer, format='PNG')
+            screenshot.save(buffer, format="PNG")
             img_base64 = base64.b64encode(buffer.getvalue()).decode()
             result["screenshot_base64"] = img_base64
             result["screenshot_format"] = "PNG"
-        
+
         return result
-        
+
     except Exception as e:
         logger.exception("Error extracting region")
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+        return {"status": "error", "error": str(e)}
 
 
 @app.tool()
@@ -584,68 +547,80 @@ def find_text(
     search_text: str,
     window_handle: Optional[int] = None,
     use_ocr: bool = False,
-    case_sensitive: bool = False
+    case_sensitive: bool = False,
 ) -> Dict[str, Any]:
     """Find text in a window or on the entire screen using various methods."""
     try:
         matches = []
         search_method = []
-        
+
         # Normalize search text for case-insensitive search
         if not case_sensitive:
             search_text_lower = search_text.lower()
         else:
             search_text_lower = search_text
-        
+
         # If window handle is provided, search within that window
         if window_handle:
             try:
                 window = Desktop(backend="uia").window(handle=window_handle)
-                
+
                 # Search in window title
                 window_title = window.window_text()
                 if window_title:
                     title_to_search = window_title if case_sensitive else window_title.lower()
                     if search_text_lower in title_to_search:
-                        matches.append({
-                            "location": "window_title",
-                            "text": window_title,
-                            "element_handle": window_handle,
-                            "element_type": "window"
-                        })
-                
+                        matches.append(
+                            {
+                                "location": "window_title",
+                                "text": window_title,
+                                "element_handle": window_handle,
+                                "element_type": "window",
+                            }
+                        )
+
                 # Search in all child elements
                 try:
                     for child in window.descendants():
                         try:
                             child_text = child.window_text()
                             if child_text:
-                                text_to_search = child_text if case_sensitive else child_text.lower()
+                                text_to_search = (
+                                    child_text if case_sensitive else child_text.lower()
+                                )
                                 if search_text_lower in text_to_search:
                                     rect = child.rectangle()
-                                    matches.append({
-                                        "location": "child_element",
-                                        "text": child_text,
-                                        "element_handle": child.handle if hasattr(child, 'handle') else None,
-                                        "element_type": getattr(child.element_info, 'control_type', 'unknown'),
-                                        "automation_id": getattr(child.element_info, 'automation_id', ''),
-                                        "rectangle": {
-                                            "left": rect.left,
-                                            "top": rect.top,
-                                            "right": rect.right,
-                                            "bottom": rect.bottom
+                                    matches.append(
+                                        {
+                                            "location": "child_element",
+                                            "text": child_text,
+                                            "element_handle": (
+                                                child.handle if hasattr(child, "handle") else None
+                                            ),
+                                            "element_type": getattr(
+                                                child.element_info, "control_type", "unknown"
+                                            ),
+                                            "automation_id": getattr(
+                                                child.element_info, "automation_id", ""
+                                            ),
+                                            "rectangle": {
+                                                "left": rect.left,
+                                                "top": rect.top,
+                                                "right": rect.right,
+                                                "bottom": rect.bottom,
+                                            },
                                         }
-                                    })
+                                    )
                         except Exception:
                             continue
                 except Exception as e:
                     logger.debug(f"Error searching child elements: {e}")
-                
+
                 search_method.append("pywinauto_window")
-                
+
             except Exception as e:
                 logger.error(f"Error searching in window {window_handle}: {e}")
-        
+
         # If OCR is requested and available, do screen-wide OCR search
         if use_ocr and OCR_AVAILABLE:
             try:
@@ -658,45 +633,49 @@ def find_text(
                 else:
                     screenshot = ImageGrab.grab()
                     search_area = "full_screen"
-                
+
                 # Get OCR data with bounding boxes
-                ocr_data = pytesseract.image_to_data(screenshot, output_type=pytesseract.Output.DICT)
-                
+                ocr_data = pytesseract.image_to_data(
+                    screenshot, output_type=pytesseract.Output.DICT
+                )
+
                 # Search through OCR results
-                for i, text in enumerate(ocr_data['text']):
+                for i, text in enumerate(ocr_data["text"]):
                     if text.strip():
                         text_to_search = text if case_sensitive else text.lower()
                         if search_text_lower in text_to_search:
                             # Calculate absolute coordinates
-                            left = ocr_data['left'][i]
-                            top = ocr_data['top'][i]
-                            width = ocr_data['width'][i]
-                            height = ocr_data['height'][i]
-                            
+                            left = ocr_data["left"][i]
+                            top = ocr_data["top"][i]
+                            width = ocr_data["width"][i]
+                            height = ocr_data["height"][i]
+
                             if window_handle:
                                 # Adjust coordinates relative to window
                                 window_rect = window.rectangle()
                                 left += window_rect.left
                                 top += window_rect.top
-                            
-                            matches.append({
-                                "location": "ocr_detection",
-                                "text": text,
-                                "search_area": search_area,
-                                "confidence": ocr_data['conf'][i],
-                                "rectangle": {
-                                    "left": left,
-                                    "top": top,
-                                    "right": left + width,
-                                    "bottom": top + height
+
+                            matches.append(
+                                {
+                                    "location": "ocr_detection",
+                                    "text": text,
+                                    "search_area": search_area,
+                                    "confidence": ocr_data["conf"][i],
+                                    "rectangle": {
+                                        "left": left,
+                                        "top": top,
+                                        "right": left + width,
+                                        "bottom": top + height,
+                                    },
                                 }
-                            })
-                
+                            )
+
                 search_method.append("ocr")
-                
+
             except Exception as e:
                 logger.error(f"OCR search failed: {e}")
-        
+
         return {
             "status": "success",
             "search_text": search_text,
@@ -705,15 +684,12 @@ def find_text(
             "matches": matches,
             "search_methods": search_method,
             "ocr_available": OCR_AVAILABLE,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
-        
+
     except Exception as e:
         logger.exception("Error finding text")
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+        return {"status": "error", "error": str(e)}
 
 
 def main() -> None:
@@ -722,10 +698,10 @@ def main() -> None:
         logger.info("Starting PyWinAuto MCP server...")
         logger.info(f"FastMCP version: 2.12.0")
         logger.info(f"OCR available: {OCR_AVAILABLE}")
-        
+
         # Run the MCP server
         app.run()
-        
+
     except KeyboardInterrupt:
         logger.info("Server interrupted by user")
     except Exception as e:

@@ -57,6 +57,8 @@ from typing import Any, Literal
 from pywinauto import Desktop
 from pywinauto.findwindows import WindowNotFoundError
 
+from pywinauto_mcp.config import settings
+
 # Import the FastMCP app instance
 try:
     from pywinauto_mcp.app import app
@@ -72,7 +74,7 @@ except ImportError as e:
 def _get_desktop():
     """Get a Desktop instance with proper error handling."""
     try:
-        return Desktop(backend="uia")
+        return Desktop(backend=settings.PYWINAUTO_BACKEND)
     except Exception as e:
         logger.error(f"Failed to get Desktop instance: {e}")
         raise
@@ -381,9 +383,9 @@ Examples:
                             "is_visible": window.is_visible() if "window" in locals() else False,
                             "is_enabled": window.is_enabled() if "window" in locals() else False,
                             "has_focus": window.has_focus() if "window" in locals() else False,
-                            "is_minimized": window.is_minimized()
-                            if "window" in locals()
-                            else False,
+                            "is_minimized": (
+                                window.is_minimized() if "window" in locals() else False
+                            ),
                         },
                         "timestamp": timestamp,
                         "metadata": window_system_metadata,

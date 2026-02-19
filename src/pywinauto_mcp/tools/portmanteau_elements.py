@@ -26,6 +26,7 @@ SUPPORTED OPERATIONS:
 - list: Get all elements in a window
 """
 
+import ctypes
 import logging
 import time
 from typing import Any, Literal
@@ -40,6 +41,8 @@ except ImportError:
     ButtonWrapper = EditWrapper = ComboBoxWrapper = None
 
 import pyautogui
+
+from pywinauto_mcp.config import settings
 
 # Import the FastMCP app instance
 try:
@@ -56,7 +59,7 @@ except ImportError as e:
 def _get_desktop():
     """Get a Desktop instance with proper error handling."""
     try:
-        return Desktop(backend="uia")
+        return Desktop(backend=settings.PYWINAUTO_BACKEND)
     except Exception as e:
         logger.error(f"Failed to get Desktop instance: {e}")
         raise
@@ -124,7 +127,9 @@ def _get_element_info(element) -> dict[str, Any]:
     return info
 
 
-def _find_element(window, control_id=None, auto_id=None, title=None, class_name=None, control_type=None):
+def _find_element(
+    window, control_id=None, auto_id=None, title=None, class_name=None, control_type=None
+):
     """Find a child element using any combination of available selectors.
 
     Builds a selector dict from whichever parameters are provided and passes
@@ -150,7 +155,10 @@ def _find_element(window, control_id=None, auto_id=None, title=None, class_name=
         kwargs["control_type"] = control_type
         parts.append(f"control_type='{control_type}'")
     if not kwargs:
-        raise ValueError("At least one selector (control_id, auto_id, title, class_name, control_type) is required")
+        raise ValueError(
+            "At least one selector (control_id, auto_id, title,"
+            " class_name, control_type) is required"
+        )
     return window.child_window(**kwargs), ", ".join(parts)
 
 
@@ -202,7 +210,8 @@ Examples:
     automation_elements("click", window_handle=12345, control_id="btnOK")
 
     # Combine selectors for precision
-    automation_elements("set_text", window_handle=12345, title="Name", control_type="Edit", text="Hello")
+    automation_elements("set_text", window_handle=12345,
+        title="Name", control_type="Edit", text="Hello")
 
     # List all elements (for discovery when selectors are unknown)
     automation_elements("list", window_handle=12345, max_depth=3)
@@ -365,9 +374,13 @@ Examples:
 
             # === CLICK OPERATION ===
             if operation == "click":
-                has_selector = any(v is not None for v in [control_id, auto_id, title, class_name, control_type])
+                has_selector = any(
+                    v is not None for v in [control_id, auto_id, title, class_name, control_type]
+                )
                 if has_selector:
-                    element, desc = _find_element(window, control_id, auto_id, title, class_name, control_type)
+                    element, desc = _find_element(
+                        window, control_id, auto_id, title, class_name, control_type
+                    )
                     if not element.exists():
                         return {
                             "status": "error",
@@ -401,14 +414,19 @@ Examples:
                     return {
                         "status": "error",
                         "operation": "click",
-                        "error": "Either a selector (control_id, auto_id, title, class_name, control_type) or both x and y must be provided",
+                        "error": "A selector (control_id/auto_id/title/class_name/control_type)"
+                        " or both x and y must be provided",
                     }
 
             # === DOUBLE_CLICK OPERATION ===
             elif operation == "double_click":
-                has_selector = any(v is not None for v in [control_id, auto_id, title, class_name, control_type])
+                has_selector = any(
+                    v is not None for v in [control_id, auto_id, title, class_name, control_type]
+                )
                 if has_selector:
-                    element, desc = _find_element(window, control_id, auto_id, title, class_name, control_type)
+                    element, desc = _find_element(
+                        window, control_id, auto_id, title, class_name, control_type
+                    )
                     if not element.exists():
                         return {
                             "status": "error",
@@ -442,14 +460,19 @@ Examples:
                     return {
                         "status": "error",
                         "operation": "double_click",
-                        "error": "Either a selector (control_id, auto_id, title, class_name, control_type) or both x and y must be provided",
+                        "error": "A selector (control_id/auto_id/title/class_name/control_type)"
+                        " or both x and y must be provided",
                     }
 
             # === RIGHT_CLICK OPERATION ===
             elif operation == "right_click":
-                has_selector = any(v is not None for v in [control_id, auto_id, title, class_name, control_type])
+                has_selector = any(
+                    v is not None for v in [control_id, auto_id, title, class_name, control_type]
+                )
                 if has_selector:
-                    element, desc = _find_element(window, control_id, auto_id, title, class_name, control_type)
+                    element, desc = _find_element(
+                        window, control_id, auto_id, title, class_name, control_type
+                    )
                     if not element.exists():
                         return {
                             "status": "error",
@@ -481,14 +504,19 @@ Examples:
                     return {
                         "status": "error",
                         "operation": "right_click",
-                        "error": "Either a selector (control_id, auto_id, title, class_name, control_type) or both x and y must be provided",
+                        "error": "A selector (control_id/auto_id/title/class_name/control_type)"
+                        " or both x and y must be provided",
                     }
 
             # === HOVER OPERATION ===
             elif operation == "hover":
-                has_selector = any(v is not None for v in [control_id, auto_id, title, class_name, control_type])
+                has_selector = any(
+                    v is not None for v in [control_id, auto_id, title, class_name, control_type]
+                )
                 if has_selector:
-                    element, desc = _find_element(window, control_id, auto_id, title, class_name, control_type)
+                    element, desc = _find_element(
+                        window, control_id, auto_id, title, class_name, control_type
+                    )
                     if not element.exists():
                         return {
                             "status": "error",
@@ -526,19 +554,27 @@ Examples:
                     return {
                         "status": "error",
                         "operation": "hover",
-                        "error": "Either a selector (control_id, auto_id, title, class_name, control_type) or both x and y must be provided",
+                        "error": "A selector (control_id/auto_id/title/class_name/control_type)"
+                        " or both x and y must be provided",
                     }
 
             # === OPERATIONS REQUIRING AN ELEMENT SELECTOR ===
-            has_selector = any(v is not None for v in [control_id, auto_id, title, class_name, control_type])
+            has_selector = any(
+                v is not None for v in [control_id, auto_id, title, class_name, control_type]
+            )
             if not has_selector:
                 return {
                     "status": "error",
                     "operation": operation,
-                    "error": f"At least one selector (control_id, auto_id, title, class_name, control_type) is required for {operation} operation",
+                    "error": (
+                        f"At least one selector (control_id, auto_id, title,"
+                        f" class_name, control_type) is required for {operation}"
+                    ),
                 }
 
-            element, selector_desc = _find_element(window, control_id, auto_id, title, class_name, control_type)
+            element, selector_desc = _find_element(
+                window, control_id, auto_id, title, class_name, control_type
+            )
 
             # === INFO OPERATION ===
             if operation == "info":
@@ -585,15 +621,63 @@ Examples:
                         "error": f"Element with {selector_desc} not found",
                     }
 
+                # Resolve the target: if the element is a container (Pane),
+                # look for an Edit-type child to type into (common with
+                # DevExpress/VCL composite controls like TcxTextEdit).
+                target = element
                 try:
-                    element.set_text(text)
-                    method = "direct"
-                except Exception as e:  # Changed bare except
-                    logger.debug(f"Direct set_text failed, attempting keyboard input: {e}")
-                    element.set_focus()
-                    element.type_keys("^a{DELETE}")
-                    element.type_keys(text, with_spaces=True)
-                    method = "keyboard"
+                    wrapper = element.wrapper_object()
+                    ct = str(getattr(wrapper.element_info, "control_type", ""))
+                    if ct in ("Pane", "Group", "Custom"):
+                        for child in wrapper.children():
+                            child_ct = str(getattr(child.element_info, "control_type", ""))
+                            if child_ct == "Edit":
+                                target = child
+                                logger.debug(f"set_text: using inner Edit child of {ct} element")
+                                break
+                except Exception as e:
+                    logger.debug(
+                        f"set_text: could not inspect children, using element directly: {e}"
+                    )
+
+                # Use WM_SETTEXT via Win32 as the primary method — UIA
+                # ValuePattern.SetValue silently fails on many Delphi/DevExpress
+                # controls even though it reports success.
+                wm_settext = 0x000C
+                target_wrapper = (
+                    target.wrapper_object() if hasattr(target, "wrapper_object") else target
+                )
+                target_handle = getattr(target_wrapper, "handle", None)
+
+                # Bring the parent window to the foreground first
+                if window_handle:
+                    ctypes.windll.user32.SetForegroundWindow(window_handle)
+
+                if target_handle:
+                    result = ctypes.windll.user32.SendMessageW(
+                        target_handle,
+                        wm_settext,
+                        0,
+                        text,
+                    )
+                    if result:
+                        method = "wm_settext"
+                    else:
+                        logger.debug("WM_SETTEXT returned 0, falling back to keyboard input")
+                        target_wrapper.set_focus()
+                        target_wrapper.type_keys("^a{DELETE}")
+                        target_wrapper.type_keys(text, with_spaces=True)
+                        method = "keyboard"
+                else:
+                    try:
+                        target.set_edit_text(text)
+                        method = "direct"
+                    except Exception as e:
+                        logger.debug(f"set_edit_text failed, falling back to keyboard: {e}")
+                        element.set_focus()
+                        element.type_keys("^a{DELETE}")
+                        element.type_keys(text, with_spaces=True)
+                        method = "keyboard"
 
                 return {
                     "status": "success",

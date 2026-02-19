@@ -12,9 +12,9 @@ from .formatter import DesktopStateFormatter
 from .capture import DesktopStateCapture
 
 __all__ = [
-    'UIElementWalker',
-    'ScreenshotAnnotator',
-    'OCRExtractor',
-    'DesktopStateFormatter',
-    'DesktopStateCapture'
+    "UIElementWalker",
+    "ScreenshotAnnotator",
+    "OCRExtractor",
+    "DesktopStateFormatter",
+    "DesktopStateCapture",
 ]

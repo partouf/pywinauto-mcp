@@ -238,14 +238,16 @@ if app is not None:
                 "matches": match_results,
                 "confidence": confidence,
                 "template_size": {"width": template.shape[1], "height": template.shape[0]},
-                "search_region": region
-                if region
-                else {
-                    "left": 0,
-                    "top": 0,
-                    "width": screenshot.shape[1],
-                    "height": screenshot.shape[0],
-                },
+                "search_region": (
+                    region
+                    if region
+                    else {
+                        "left": 0,
+                        "top": 0,
+                        "width": screenshot.shape[1],
+                        "height": screenshot.shape[0],
+                    }
+                ),
             }
 
         except Exception as e:

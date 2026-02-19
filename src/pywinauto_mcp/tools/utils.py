@@ -10,6 +10,8 @@ from typing import Any, TypeVar
 
 from pydantic import BaseModel, Field
 
+from pywinauto_mcp.config import settings
+
 # Initialize logger
 logger = logging.getLogger(__name__)
 
@@ -208,7 +210,7 @@ def validate_window_handle(handle: int) -> bool:
     from pywinauto import Desktop
 
     try:
-        window = Desktop(backend="uia").window(handle=handle)
+        window = Desktop(backend=settings.PYWINAUTO_BACKEND).window(handle=handle)
         return window.exists()
     except Exception:
         return False
@@ -219,7 +221,7 @@ def get_desktop():
     from pywinauto import Desktop
 
     try:
-        return Desktop(backend="uia")
+        return Desktop(backend=settings.PYWINAUTO_BACKEND)
     except Exception as e:
         logger.error(f"Failed to initialize Desktop: {e}", exc_info=True)
         raise RuntimeError("Failed to initialize Windows Desktop automation") from e
