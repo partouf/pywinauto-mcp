@@ -1,12 +1,10 @@
-"""
-FastMCP application instance for PyWinAuto MCP.
+"""FastMCP application instance for PyWinAuto MCP.
 
 This module creates the FastMCP app instance to avoid circular imports
 between main.py and the tools modules.
 """
 
 import logging
-import sys
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +29,8 @@ except Exception as e:
 
 # Check OCR dependencies
 try:
-    import pytesseract
-    from PIL import Image, ImageGrab
+    import pytesseract  # noqa: F401
+    from PIL import Image, ImageGrab  # noqa: F401
 
     OCR_AVAILABLE = True
     logger.info("OCR dependencies available")

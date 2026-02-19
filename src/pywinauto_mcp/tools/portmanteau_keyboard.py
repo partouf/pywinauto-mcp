@@ -102,7 +102,8 @@ Examples:
             pause (float): Post-operation suspension duration to ensure input processing.
 
         Returns:
-            dict[str, Any]: Operation-specific result dictionary with success status and input metadata.
+            dict[str, Any]: Operation-specific result dictionary
+                with success status and input metadata.
 
         """
         try:

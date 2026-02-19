@@ -11,7 +11,7 @@ from pydantic import validator
 
 
 class Settings(BaseSettings):
-    """Application settings."""
+    """Load application settings from environment variables and .env file."""
 
     # Server Configuration
     HOST: str = "0.0.0.0"
@@ -53,7 +53,7 @@ class Settings(BaseSettings):
         case_sensitive = True
 
     @validator("SCREENSHOT_DIR", pre=True)
-    def create_screenshot_dir(cls, v):
+    def create_screenshot_dir(self, v):
         """Create screenshot directory if it doesn't exist."""
         path = Path(v)
         path.mkdir(parents=True, exist_ok=True)

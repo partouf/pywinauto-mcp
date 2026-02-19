@@ -1,15 +1,13 @@
-"""
-Screenshot Annotator - Annotate screenshots with UI element bounding boxes
-"""
+"""Screenshot Annotator - Annotate screenshots with UI element bounding boxes."""
 
-from typing import List, Dict
-from PIL import Image, ImageDraw, ImageFont, ImageGrab
 import base64
 from io import BytesIO
 
+from PIL import Image, ImageDraw, ImageFont, ImageGrab
+
 
 class ScreenshotAnnotator:
-    """Annotate screenshots with UI element bounding boxes"""
+    """Annotate screenshots with UI element bounding boxes."""
 
     COLOR_MAP = {
         "Button": "#00FF00",  # Green
@@ -26,11 +24,11 @@ class ScreenshotAnnotator:
         self.font_size = font_size
         try:
             self.font = ImageFont.truetype("arial.ttf", font_size)
-        except:
+        except Exception:
             self.font = ImageFont.load_default()
 
-    def capture_and_annotate(self, elements: List[Dict]) -> Image:
-        """Capture screenshot and draw element annotations"""
+    def capture_and_annotate(self, elements: list[dict]) -> Image:
+        """Capture screenshot and draw element annotations."""
         # Capture full screen
         screenshot = ImageGrab.grab()
         draw = ImageDraw.Draw(screenshot)
@@ -41,8 +39,8 @@ class ScreenshotAnnotator:
 
         return screenshot
 
-    def _draw_element(self, draw: ImageDraw, elem: Dict):
-        """Draw single element annotation"""
+    def _draw_element(self, draw: ImageDraw, elem: dict):
+        """Draw single element annotation."""
         bounds = elem["bounds"]
         x = bounds["x"]
         y = bounds["y"]
@@ -63,7 +61,7 @@ class ScreenshotAnnotator:
         draw.text((x + 2, y - 16), label, fill="#000000", font=self.font)
 
     def to_base64(self, image: Image) -> str:
-        """Convert image to base64 string"""
+        """Convert image to base64 string."""
         buffer = BytesIO()
         image.save(buffer, format="PNG")
         return base64.b64encode(buffer.getvalue()).decode()

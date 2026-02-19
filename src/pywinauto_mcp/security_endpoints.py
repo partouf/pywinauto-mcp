@@ -1,30 +1,28 @@
-"""
-Security endpoints for PyWinAutoMCP.
+"""Security endpoints for PyWinAutoMCP.
 
 This module provides FastMCP tool definitions for security-related functionality.
 """
 
-from typing import List, Optional, Dict, Any
-from datetime import datetime, time
-from enum import Enum
-from pydantic import BaseModel, Field, validator, EmailStr
-from fastapi import HTTPException, status, BackgroundTasks
-from fastmcp.tools import tool as mcp
-
 import sys
+from datetime import datetime
 from pathlib import Path
+from typing import Any
+
+from fastapi import BackgroundTasks, HTTPException, status
+from fastmcp.tools import tool as mcp
+from pydantic import BaseModel, EmailStr, Field
+
+from pywinauto_mcp.security import (
+    ApplicationMonitor,
+    IntruderDetector,
+    SecurityEvent,
+    SecurityLevel,
+)
 
 # Add the project root to the Python path
 project_root = Path(__file__).parent
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
-
-from pywinauto_mcp.security import (
-    ApplicationMonitor,
-    IntruderDetector,
-    SecurityLevel,
-    SecurityEvent,
-)
 
 # Create singleton instances
 app_monitor = ApplicationMonitor()
@@ -37,7 +35,7 @@ class TimeWindow(BaseModel):
 
     start: str = Field(..., description="Start time in HH:MM format")
     end: str = Field(..., description="End time in HH:MM format")
-    days: Optional[List[int]] = Field(
+    days: list[int] | None = Field(
         None,
         description="List of weekdays (0=Monday, 6=Sunday). If None, applies to all days.",
         ge=0,
@@ -48,7 +46,7 @@ class TimeWindow(BaseModel):
 class MonitorSensitiveAppsRequest(BaseModel):
     """Request model for monitoring sensitive applications."""
 
-    app_names: List[str] = Field(
+    app_names: list[str] = Field(
         ...,
         description="List of application names to monitor (e.g., ['notepad.exe', 'chrome.exe'])",
         min_items=1,
@@ -56,11 +54,11 @@ class MonitorSensitiveAppsRequest(BaseModel):
     webcam_required: bool = Field(
         True, description="Whether to require webcam verification for access"
     )
-    alert_email: Optional[EmailStr] = Field(None, description="Email address to send alerts to")
+    alert_email: EmailStr | None = Field(None, description="Email address to send alerts to")
     monitor_duration_minutes: int = Field(
         60, description="Duration to monitor for (in minutes)", gt=0
     )
-    time_windows: Optional[List[TimeWindow]] = Field(
+    time_windows: list[TimeWindow] | None = Field(
         None, description="Time windows when monitoring should be active"
     )
 
@@ -72,7 +70,7 @@ class IntruderDetectionRequest(BaseModel):
         0.7, description="Motion detection sensitivity (0.1-1.0)", ge=0.1, le=1.0
     )
     duration_minutes: int = Field(5, description="Duration to monitor (in minutes)", gt=0)
-    alert_contacts: Optional[List[EmailStr]] = Field(
+    alert_contacts: list[EmailStr] | None = Field(
         None, description="List of email addresses to alert"
     )
     record_video: bool = Field(True, description="Whether to record video when motion is detected")
@@ -85,10 +83,11 @@ class SecurityEventResponse(BaseModel):
     event_type: str
     level: str
     message: str
-    details: Dict[str, Any]
+    details: dict[str, Any]
 
     @classmethod
     def from_event(cls, event: SecurityEvent) -> "SecurityEventResponse":
+        """Create a SecurityEventResponse from a SecurityEvent."""
         return cls(
             timestamp=event.timestamp,
             event_type=event.event_type,
@@ -102,9 +101,9 @@ class MonitoringStatusResponse(BaseModel):
     """Response model for monitoring status."""
 
     running: bool
-    start_time: Optional[datetime]
+    start_time: datetime | None
     events_logged: int
-    last_event: Optional[SecurityEventResponse]
+    last_event: SecurityEventResponse | None
 
 
 # Helper Functions
@@ -123,8 +122,7 @@ def get_monitoring_status(monitor) -> MonitoringStatusResponse:
 def start_app_monitoring(
     request: MonitorSensitiveAppsRequest, background_tasks: BackgroundTasks
 ) -> MonitoringStatusResponse:
-    """
-    Start monitoring sensitive applications.
+    """Start monitoring sensitive applications.
 
     This tool starts a background task that monitors specified applications
     and enforces security policies like webcam verification.
@@ -157,8 +155,7 @@ def start_app_monitoring(
 def start_intruder_detection(
     request: IntruderDetectionRequest, background_tasks: BackgroundTasks
 ) -> MonitoringStatusResponse:
-    """
-    Start intruder detection.
+    """Start intruder detection.
 
     This tool starts a background task that monitors for motion using
     available cameras and alerts when potential intruders are detected.
@@ -193,14 +190,14 @@ def get_intruder_detection_status() -> MonitoringStatusResponse:
 
 
 @mcp.tool("Stop application monitoring")
-def stop_app_monitoring() -> Dict[str, str]:
+def stop_app_monitoring() -> dict[str, str]:
     """Stop application monitoring."""
     app_monitor.running = False
     return {"status": "stopped", "message": "Application monitoring stopped"}
 
 
 @mcp.tool("Stop intruder detection")
-def stop_intruder_detection() -> Dict[str, str]:
+def stop_intruder_detection() -> dict[str, str]:
     """Stop intruder detection."""
     intruder_detector.running = False
     return {"status": "stopped", "message": "Intruder detection stopped"}
@@ -208,15 +205,15 @@ def stop_intruder_detection() -> Dict[str, str]:
 
 @mcp.tool("Get security events")
 def get_security_events(
-    limit: int = 100, level: Optional[SecurityLevel] = None, event_type: Optional[str] = None
-) -> List[SecurityEventResponse]:
-    """
-    Get security events.
+    limit: int = 100, level: SecurityLevel | None = None, event_type: str | None = None
+) -> list[SecurityEventResponse]:
+    """Get security events.
 
     Args:
         limit: Maximum number of events to return
         level: Filter by security level (low, medium, high, critical)
         event_type: Filter by event type
+
     """
     events = app_monitor.events + intruder_detector.events
 

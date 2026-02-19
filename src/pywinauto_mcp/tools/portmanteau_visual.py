@@ -268,7 +268,7 @@ Examples:
                     )
                     confidences = [float(c) for c in data["conf"] if float(c) > 0]
                     avg_confidence = sum(confidences) / len(confidences) if confidences else 0
-                except:
+                except Exception:
                     avg_confidence = -1
 
                 return {

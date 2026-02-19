@@ -1,4 +1,4 @@
-"""UI Element Walker - Traverse Windows UI Automation tree and extract elements"""
+"""UI Element Walker - Traverse Windows UI Automation tree and extract elements."""
 
 import threading
 
@@ -8,7 +8,7 @@ from pywinauto_mcp.config import settings
 
 
 class UIElementWalker:
-    """Walk Windows UI Automation tree and extract elements"""
+    """Walk Windows UI Automation tree and extract elements."""
 
     INTERACTIVE_TYPES = {
         "Button",
@@ -34,7 +34,7 @@ class UIElementWalker:
         self.elements = []
 
     def walk(self, root_element=None) -> list[dict]:
-        """Walk UI tree and extract element information"""
+        """Walk UI tree and extract element information."""
         if root_element is None:
             root_element = Desktop(backend=settings.PYWINAUTO_BACKEND)
 
@@ -43,7 +43,7 @@ class UIElementWalker:
         return self.elements
 
     def _recurse(self, element, depth: int):
-        """Recursively walk UI tree"""
+        """Recursively walk UI tree."""
         if depth > self.max_depth:
             return
 
@@ -72,7 +72,7 @@ class UIElementWalker:
             pass
 
     def _extract_element_info(self, element) -> dict | None:
-        """Extract all relevant properties from element with timeout"""
+        """Extract all relevant properties from element with timeout."""
         result = [None]  # Use list to modify from thread
 
         def extract_with_timeout():
@@ -124,19 +124,19 @@ class UIElementWalker:
         return result[0]
 
     def _get_parent_window(self, element):
-        """Find parent top-level window"""
+        """Find parent top-level window."""
         current = element
         while current:
             try:
                 if current.control_type == "Window":
                     return current
                 current = current.parent()
-            except:
+            except Exception:
                 break
         return None
 
     def _should_include(self, info: dict) -> bool:
-        """Determine if element should be included"""
+        """Determine if element should be included."""
         # Must be visible
         if not info.get("is_visible"):
             return False

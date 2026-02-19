@@ -1,20 +1,16 @@
-"""
-Windows Automation API endpoints for PyWinAutoMCP.
+"""Windows Automation API endpoints for PyWinAutoMCP.
 
 This module provides FastAPI routes for core Windows automation functionality,
 including window management, element interaction, and input simulation.
 """
 
 import logging
-from typing import Dict, List, Optional, Union
 
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, HTTPException, Query, status
 from fastmcp import mcp
 from pydantic import BaseModel, Field
-import pywinauto
 from pywinauto.application import Application
 from pywinauto.findwindows import ElementNotFoundError, find_window
-from pywinauto.controls.win32_controls import ButtonWrapper, EditWrapper
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -32,7 +28,7 @@ class WindowInfo(BaseModel):
     class_name: str = Field(..., description="Window class name")
     is_visible: bool = Field(..., description="Whether the window is visible")
     is_enabled: bool = Field(..., description="Whether the window is enabled")
-    rectangle: Dict[str, int] = Field(
+    rectangle: dict[str, int] = Field(
         ..., description="Window rectangle (left, top, right, bottom)"
     )
     process_id: int = Field(..., description="Process ID of the window")
@@ -46,7 +42,7 @@ class ElementInfo(BaseModel):
     automation_id: str = Field(..., description="Automation ID of the element")
     is_enabled: bool = Field(..., description="Whether the element is enabled")
     is_visible: bool = Field(..., description="Whether the element is visible")
-    rectangle: Dict[str, int] = Field(
+    rectangle: dict[str, int] = Field(
         ..., description="Element rectangle (left, top, right, bottom)"
     )
 
@@ -55,8 +51,8 @@ class ClickRequest(BaseModel):
     """Request model for clicking an element."""
 
     window_handle: int = Field(..., description="Handle of the window containing the element")
-    element_name: Optional[str] = Field(None, description="Name of the element to click")
-    element_id: Optional[str] = Field(None, description="Automation ID of the element to click")
+    element_name: str | None = Field(None, description="Name of the element to click")
+    element_id: str | None = Field(None, description="Automation ID of the element to click")
     button: str = Field("left", description="Mouse button to use (left, right, middle)")
     double: bool = Field(False, description="Whether to perform a double-click")
 
@@ -66,8 +62,8 @@ class TypeRequest(BaseModel):
 
     window_handle: int = Field(..., description="Handle of the window to type into")
     text: str = Field(..., description="Text to type")
-    element_name: Optional[str] = Field(None, description="Name of the element to type into")
-    element_id: Optional[str] = Field(None, description="Automation ID of the element to type into")
+    element_name: str | None = Field(None, description="Name of the element to type into")
+    element_id: str | None = Field(None, description="Automation ID of the element to type into")
 
 
 # Helper Functions
@@ -87,14 +83,13 @@ def _get_window_info(window) -> WindowInfo:
 
 # API Endpoints
 @mcp.tool("Find a window by title or class name")
-@router.get("/find", response_model=List[WindowInfo])
+@router.get("/find", response_model=list[WindowInfo])
 async def find_windows(
-    title: Optional[str] = Query(None, description="Window title or part of it (case-insensitive)"),
-    class_name: Optional[str] = Query(None, description="Window class name (case-sensitive)"),
-    process_id: Optional[int] = Query(None, description="Process ID of the window"),
-) -> List[WindowInfo]:
-    """
-    Find windows matching the specified criteria.
+    title: str | None = Query(None, description="Window title or part of it (case-insensitive)"),
+    class_name: str | None = Query(None, description="Window class name (case-sensitive)"),
+    process_id: int | None = Query(None, description="Process ID of the window"),
+) -> list[WindowInfo]:
+    """Find windows matching the specified criteria.
 
     Returns a list of windows that match the given title, class name, or process ID.
     At least one search parameter must be provided.
@@ -102,7 +97,10 @@ async def find_windows(
     if not any([title, class_name, process_id]):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="At least one search parameter (title, class_name, or process_id) must be provided",
+            detail=(
+                "At least one search parameter (title, class_name, or process_id) "
+                "must be provided"
+            ),
         )
 
     try:
@@ -135,20 +133,20 @@ async def find_windows(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error finding windows: {str(e)}",
-        )
+        ) from e
 
 
 @mcp.tool("Get information about a window")
 @router.get("/{window_handle}", response_model=WindowInfo)
 async def get_window_info(window_handle: int) -> WindowInfo:
-    """
-    Get detailed information about a specific window.
+    """Get detailed information about a specific window.
 
     Args:
         window_handle: Handle of the window to get information about
 
     Returns:
         WindowInfo: Detailed information about the window
+
     """
     try:
         app = Application().connect(handle=window_handle)
@@ -159,14 +157,13 @@ async def get_window_info(window_handle: int) -> WindowInfo:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Window not found or error accessing window: {str(e)}",
-        )
+        ) from e
 
 
 @mcp.tool("Click an element in a window")
 @router.post("/click", status_code=status.HTTP_200_OK)
-async def click_element(request: ClickRequest) -> Dict[str, str]:
-    """
-    Click an element in a window.
+async def click_element(request: ClickRequest) -> dict[str, str]:
+    """Click an element in a window.
 
     The element can be identified by its name or automation ID.
     """
@@ -209,14 +206,13 @@ async def click_element(request: ClickRequest) -> Dict[str, str]:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error clicking element: {str(e)}",
-        )
+        ) from e
 
 
 @mcp.tool("Type text into a window or element")
 @router.post("/type", status_code=status.HTTP_200_OK)
-async def type_text(request: TypeRequest) -> Dict[str, str]:
-    """
-    Type text into a window or a specific element.
+async def type_text(request: TypeRequest) -> dict[str, str]:
+    """Type text into a window or a specific element.
 
     If no element is specified, the text will be sent to the window with focus.
     """
@@ -244,21 +240,24 @@ async def type_text(request: TypeRequest) -> Dict[str, str]:
 
         return {
             "status": "success",
-            "message": f"Typed text into {'element' if request.element_name or request.element_id else 'window'}",
+            "message": (
+                f"Typed text into "
+                f"{'element' if request.element_name or request.element_id else 'window'}"
+            ),
         }
 
     except Exception as e:
         logger.error(f"Error typing text: {str(e)}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error typing text: {str(e)}"
-        )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error typing text: {str(e)}",
+        ) from e
 
 
 @mcp.tool("Get all child elements of a window")
-@router.get("/{window_handle}/elements", response_model=List[ElementInfo])
-async def get_window_elements(window_handle: int) -> List[ElementInfo]:
-    """
-    Get all child elements of a window.
+@router.get("/{window_handle}/elements", response_model=list[ElementInfo])
+async def get_window_elements(window_handle: int) -> list[ElementInfo]:
+    """Get all child elements of a window.
 
     This endpoint returns a list of all UI elements in the specified window.
     """
@@ -296,14 +295,13 @@ async def get_window_elements(window_handle: int) -> List[ElementInfo]:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error getting window elements: {str(e)}",
-        )
+        ) from e
 
 
 @mcp.tool("Close a window")
 @router.post("/{window_handle}/close", status_code=status.HTTP_200_OK)
-async def close_window(window_handle: int) -> Dict[str, str]:
-    """
-    Close a window by its handle.
+async def close_window(window_handle: int) -> dict[str, str]:
+    """Close a window by its handle.
 
     This sends a close message to the window, which is the same as clicking the X button.
     The window may prompt the user to save changes before closing.
@@ -318,4 +316,4 @@ async def close_window(window_handle: int) -> Dict[str, str]:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error closing window: {str(e)}",
-        )
+        ) from e

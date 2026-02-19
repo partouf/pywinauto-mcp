@@ -8,6 +8,7 @@ import logging
 import time
 from typing import Any
 
+import pyautogui
 from pywinauto.base_wrapper import ElementNotVisible
 from pywinauto.controls.uia_controls import ButtonWrapper, ComboBoxWrapper, EditWrapper
 from pywinauto.findwindows import ElementNotFoundError
@@ -226,7 +227,8 @@ if app is not None:
 
         Args:
             window_handle: The handle of the parent window
-            control_id: The control ID of the element to hover over (optional if x and y are provided)
+            control_id: The control ID of the element to hover over
+                (optional if x and y are provided)
             x: X coordinate relative to the window (optional if control_id is provided)
             y: Y coordinate relative to the window (optional if control_id is provided)
             duration: Duration of the hover in seconds
@@ -356,7 +358,7 @@ if app is not None:
                     info["items"] = element.item_texts()
                     info["selected_index"] = element.selected_index()
                     info["selected_text"] = element.selected_text()
-                except:
+                except Exception:
                     pass
 
             return info
@@ -463,7 +465,7 @@ if app is not None:
                     "method": "direct",
                     "timestamp": time.time(),
                 }
-            except:
+            except Exception:
                 # Fall back to keyboard input if direct setting fails
                 try:
                     element.set_focus()
@@ -667,7 +669,7 @@ if app is not None:
                         info["items"] = element.item_texts()
                         info["selected_index"] = element.selected_index()
                         info["selected_text"] = element.selected_text()
-                    except:
+                    except Exception:
                         pass
 
                 # Get position if available
@@ -681,7 +683,7 @@ if app is not None:
                         "width": rect.width(),
                         "height": rect.height(),
                     }
-                except:
+                except Exception:
                     pass
 
                 # Recursively get children
@@ -691,7 +693,7 @@ if app is not None:
                         child_info = get_element_info(child, depth + 1)
                         if child_info:
                             info["children"].append(child_info)
-                except:
+                except Exception:
                     pass
 
                 return info

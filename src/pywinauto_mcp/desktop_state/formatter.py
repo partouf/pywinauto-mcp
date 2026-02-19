@@ -1,17 +1,15 @@
-"""
-Desktop State Formatter - Format desktop state into structured output
-"""
+"""Desktop State Formatter - Format desktop state into structured output."""
 
-from typing import List, Dict, Optional
 from PIL import Image
+
 from .walker import UIElementWalker
 
 
 class DesktopStateFormatter:
-    """Format desktop state into structured output"""
+    """Format desktop state into structured output."""
 
-    def format(self, elements: List[Dict], screenshot: Optional[Image] = None) -> Dict:
-        """Format complete state output"""
+    def format(self, elements: list[dict], screenshot: Image | None = None) -> dict:
+        """Format complete state output."""
         # Separate element types
         interactive = [e for e in elements if self._is_interactive(e)]
         informative = [e for e in elements if self._is_informative(e)]
@@ -36,8 +34,8 @@ class DesktopStateFormatter:
 
         return output
 
-    def _build_text_report(self, interactive: List[Dict], informative: List[Dict]) -> str:
-        """Build human-readable text report"""
+    def _build_text_report(self, interactive: list[dict], informative: list[dict]) -> str:
+        """Build human-readable text report."""
         lines = []
 
         # Interactive elements section
@@ -63,10 +61,10 @@ class DesktopStateFormatter:
 
         return "\n".join(lines)
 
-    def _is_interactive(self, elem: Dict) -> bool:
-        """Check if element is interactive"""
+    def _is_interactive(self, elem: dict) -> bool:
+        """Check if element is interactive."""
         return elem["type"] in UIElementWalker.INTERACTIVE_TYPES
 
-    def _is_informative(self, elem: Dict) -> bool:
-        """Check if element is informative"""
+    def _is_informative(self, elem: dict) -> bool:
+        """Check if element is informative."""
         return elem["type"] in UIElementWalker.INFORMATIVE_TYPES

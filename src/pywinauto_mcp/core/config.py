@@ -1,13 +1,12 @@
-"""
-Configuration management for PyWinAutoMCP.
+"""Configuration management for PyWinAutoMCP.
 
 This module provides configuration loading and management for the PyWinAutoMCP server.
 """
 
-import os
 import logging
-from typing import Dict, Any, Optional
-from pathlib import Path
+import os
+from typing import Any
+
 import yaml
 
 # Default configuration
@@ -33,11 +32,12 @@ DEFAULT_CONFIG_PATHS = [
 ]
 
 
-def find_config_file() -> Optional[str]:
+def find_config_file() -> str | None:
     """Find the configuration file.
 
     Returns:
         Optional[str]: Path to the config file if found, None otherwise
+
     """
     # Check environment variable first
     env_path = os.environ.get(CONFIG_FILE_ENV_VAR)
@@ -52,7 +52,7 @@ def find_config_file() -> Optional[str]:
     return None
 
 
-def load_config_file(path: str) -> Dict[str, Any]:
+def load_config_file(path: str) -> dict[str, Any]:
     """Load configuration from a YAML file.
 
     Args:
@@ -63,9 +63,10 @@ def load_config_file(path: str) -> Dict[str, Any]:
 
     Raises:
         ValueError: If the config file is invalid
+
     """
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             return yaml.safe_load(f) or {}
     except yaml.YAMLError as e:
         raise ValueError(f"Invalid YAML in config file: {str(e)}") from e
@@ -73,7 +74,7 @@ def load_config_file(path: str) -> Dict[str, Any]:
         raise ValueError(f"Failed to load config file: {str(e)}") from e
 
 
-def get_config(config_path: Optional[str] = None) -> Dict[str, Any]:
+def get_config(config_path: str | None = None) -> dict[str, Any]:
     """Get the application configuration.
 
     Args:
@@ -82,6 +83,7 @@ def get_config(config_path: Optional[str] = None) -> Dict[str, Any]:
 
     Returns:
         Dict[str, Any]: Merged configuration
+
     """
     # Start with default config
     config = DEFAULT_CONFIG.copy()

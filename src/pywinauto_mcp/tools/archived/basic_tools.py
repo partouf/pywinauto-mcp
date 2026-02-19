@@ -49,7 +49,8 @@ if app is not None:
         understand, and get detailed information about all automation tools.
 
         Args:
-            category: Filter by tool category (system, windows, elements, mouse, input, visual, face-recognition, desktop_state)
+            category: Filter by tool category (system, windows, elements,
+                mouse, input, visual, face-recognition, desktop_state)
             tool_name: Get detailed help for a specific tool
 
         Returns:
@@ -59,7 +60,9 @@ if app is not None:
         try:
             help_info = {
                 "server": "PyWinAuto MCP v0.2.0",
-                "description": "Comprehensive Windows UI automation with 23+ tools across 7 categories",
+                "description": (
+                    "Comprehensive Windows UI automation" " with 23+ tools across 7 categories"
+                ),
                 "total_tools": 23,
                 "categories": {
                     "system": 5,
@@ -485,7 +488,7 @@ else:
 
     # Define fallback functions for when app is not available
     def get_help(category=None, tool_name=None):
-        """Fallback help function when MCP app is not available"""
+        """Fallback help function when MCP app is not available."""
         return {
             "status": "error",
             "error": "MCP app not available",
@@ -500,7 +503,11 @@ def _get_tool_details(tool_name: str) -> dict[str, Any] | None:
         "get_desktop_state": {
             "name": "get_desktop_state",
             "category": "desktop_state",
-            "description": "Capture comprehensive desktop state with UI element discovery, visual annotations, and OCR capabilities",
+            "description": (
+                "Capture comprehensive desktop state with UI"
+                " element discovery, visual annotations,"
+                " and OCR capabilities"
+            ),
             "parameters": {
                 "use_vision": {
                     "type": "boolean",
@@ -529,9 +536,17 @@ def _get_tool_details(tool_name: str) -> dict[str, Any] | None:
                 "get_desktop_state() - Basic UI element discovery",
                 "get_desktop_state(use_vision=True) - With visual annotations",
                 "get_desktop_state(use_ocr=True) - With OCR text extraction",
-                "get_desktop_state(use_vision=True, use_ocr=True, max_depth=15) - Complete analysis",
+                (
+                    "get_desktop_state(use_vision=True,"
+                    " use_ocr=True, max_depth=15)"
+                    " - Complete analysis"
+                ),
             ],
-            "notes": "Provides similar functionality to Windows-MCP State-Tool but enhanced with OCR and better element classification",
+            "notes": (
+                "Provides similar functionality to"
+                " Windows-MCP State-Tool but enhanced"
+                " with OCR and better element classification"
+            ),
         },
         "health_check": {
             "name": "health_check",
@@ -564,7 +579,11 @@ def _get_tool_details(tool_name: str) -> dict[str, Any] | None:
             },
             "examples": [
                 "click_element(window_handle=12345, control_id='btnOK') - Click OK button",
-                "click_element(window_handle=12345, title='Save', button='right') - Right-click Save",
+                (
+                    "click_element(window_handle=12345,"
+                    " title='Save', button='right')"
+                    " - Right-click Save"
+                ),
             ],
         },
         "take_screenshot": {
@@ -584,7 +603,11 @@ def _get_tool_details(tool_name: str) -> dict[str, Any] | None:
             "examples": [
                 "take_screenshot() - Full screen capture",
                 "take_screenshot(window_handle=12345) - Specific window screenshot",
-                "take_screenshot(region={'x': 100, 'y': 100, 'width': 300, 'height': 200}) - Region capture",
+                (
+                    "take_screenshot(region={'x': 100,"
+                    " 'y': 100, 'width': 300,"
+                    " 'height': 200}) - Region capture"
+                ),
             ],
         },
         "type_text": {

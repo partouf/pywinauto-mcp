@@ -1,39 +1,40 @@
-"""
-PyWinAuto MCP - FastMCP 2.12+ compliant Windows UI automation server.
+"""PyWinAuto MCP - FastMCP 2.12+ compliant Windows UI automation server.
+
 Fixed version with proper FastMCP integration and COMPLETE functionality.
 """
 
+import base64
 import logging
 import logging.config
-import time
 import sys
-import base64
-import json
-import os
-from enum import Enum
-from functools import wraps
-from typing import Any, Dict, List, Optional, Tuple, TypeVar, Callable, cast
+import time
 from datetime import datetime
-
-import cv2
-import numpy as np
-from pathlib import Path
+from enum import Enum
+from typing import Any
 
 # Try to import OCR dependencies
 try:
-    import pytesseract
-    from PIL import Image, ImageGrab
+    import pytesseract  # noqa: F401
+    from PIL import Image, ImageGrab  # noqa: F401
 
     OCR_AVAILABLE = True
 except ImportError:
     OCR_AVAILABLE = False
 
 from fastmcp import FastMCP
-from pydantic import BaseModel, Field, field_validator
-
+from pydantic import BaseModel, Field
 from pywinauto import Desktop, findwindows
-from pywinauto.findwindows import ElementNotFoundError, WindowAmbiguousError
-from pywinauto.timings import TimeoutError as PywinautoTimeoutError
+
+from .tools import (
+    element,
+    element_tools,
+    input,
+    mouse,
+    system_tools,
+    visual,
+    visual_tools,
+    window,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -49,9 +50,6 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastMCP app - FIXED: Removed 'description' parameter for 2.12+
 app = FastMCP(name="pywinauto-mcp", version="0.1.0")
-
-# Import all tools modules for dynamic registration
-from .tools import mouse, element_tools, system_tools, visual_tools, element, input, visual, window
 
 
 # Function to register all tools from a module
@@ -101,18 +99,20 @@ class WindowInfo(BaseModel):
 
 
 class HealthStatus(str, Enum):
+    """Represent the health status of the server."""
+
     OK = "ok"
     WARNING = "warning"
     ERROR = "error"
 
 
 @app.tool()
-def health_check() -> Dict[str, Any]:
-    """
-    Check the health status of the PyWinAuto MCP server.
+def health_check() -> dict[str, Any]:
+    """Check the health status of the PyWinAuto MCP server.
 
     Returns:
         Dict containing service status, version, and system information
+
     """
     try:
         import platform
@@ -163,11 +163,11 @@ def health_check() -> Dict[str, Any]:
 
 @app.tool()
 def find_window(
-    title: Optional[str] = None,
-    class_name: Optional[str] = None,
-    process_id: Optional[int] = None,
+    title: str | None = None,
+    class_name: str | None = None,
+    process_id: int | None = None,
     timeout: float = 10.0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Find a window by its attributes."""
     start_time = time.time()
     last_error = None
@@ -228,10 +228,10 @@ def find_window(
 @app.tool()
 def click_element(
     window_handle: int,
-    control_id: Optional[str] = None,
-    title: Optional[str] = None,
+    control_id: str | None = None,
+    title: str | None = None,
     button: str = "left",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Click on a UI element in the specified window."""
     try:
         window = Desktop(backend="uia").window(handle=window_handle)
@@ -261,8 +261,8 @@ def click_element(
 
 @app.tool()
 def type_text(
-    window_handle: int, text: str, control_id: Optional[str] = None, title: Optional[str] = None
-) -> Dict[str, Any]:
+    window_handle: int, text: str, control_id: str | None = None, title: str | None = None
+) -> dict[str, Any]:
     """Type text into a window or control."""
     try:
         window = Desktop(backend="uia").window(handle=window_handle)
@@ -290,7 +290,7 @@ def type_text(
 
 
 @app.tool()
-def list_windows() -> Dict[str, Any]:
+def list_windows() -> dict[str, Any]:
     """List all visible windows on the desktop."""
     try:
         desktop = Desktop(backend="uia")
@@ -328,8 +328,8 @@ def list_windows() -> Dict[str, Any]:
 
 @app.tool()
 def get_element_info(
-    window_handle: int, control_id: Optional[str] = None, title: Optional[str] = None
-) -> Dict[str, Any]:
+    window_handle: int, control_id: str | None = None, title: str | None = None
+) -> dict[str, Any]:
     """Get detailed information about a UI element."""
     try:
         window = Desktop(backend="uia").window(handle=window_handle)
@@ -375,10 +375,10 @@ def get_element_info(
 @app.tool()
 def extract_text(
     window_handle: int,
-    control_id: Optional[str] = None,
-    title: Optional[str] = None,
+    control_id: str | None = None,
+    title: str | None = None,
     use_ocr: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Extract text from a window or UI element using pywinauto or OCR."""
     try:
         window = Desktop(backend="uia").window(handle=window_handle)
@@ -473,14 +473,16 @@ def extract_region(
     bottom: int,
     use_ocr: bool = True,
     save_screenshot: bool = False,
-    output_path: Optional[str] = None,
-) -> Dict[str, Any]:
+    output_path: str | None = None,
+) -> dict[str, Any]:
     """Extract text or capture a screenshot from a specific screen region."""
     try:
         if left >= right or top >= bottom:
             return {
                 "status": "error",
-                "error": "Invalid region coordinates: left must be < right and top must be < bottom",
+                "error": (
+                    "Invalid region coordinates:" " left must be < right and top must be < bottom"
+                ),
             }
 
         # Capture the region
@@ -545,10 +547,10 @@ def extract_region(
 @app.tool()
 def find_text(
     search_text: str,
-    window_handle: Optional[int] = None,
+    window_handle: int | None = None,
     use_ocr: bool = False,
     case_sensitive: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Find text in a window or on the entire screen using various methods."""
     try:
         matches = []
@@ -696,7 +698,7 @@ def main() -> None:
     """Run the PyWinAuto MCP server."""
     try:
         logger.info("Starting PyWinAuto MCP server...")
-        logger.info(f"FastMCP version: 2.12.0")
+        logger.info("FastMCP version: 2.12.0")
         logger.info(f"OCR available: {OCR_AVAILABLE}")
 
         # Run the MCP server

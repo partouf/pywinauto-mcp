@@ -1,8 +1,7 @@
-"""
-OCR-related Pydantic models for request/response validation.
-"""
+"""OCR-related Pydantic models for request/response validation."""
 
-from typing import Dict, Any, Optional, List, Union
+from typing import Any
+
 from pydantic import BaseModel, Field, HttpUrl
 
 
@@ -12,7 +11,7 @@ class OCRResult(BaseModel):
     text: str = Field(..., description="Extracted text from the image")
     confidence: float = Field(..., description="Average confidence of the OCR result (0-100)")
     language: str = Field(..., description="Language used for OCR")
-    raw_data: Optional[Dict[str, Any]] = Field(
+    raw_data: dict[str, Any] | None = Field(
         None, description="Raw Tesseract OCR data including bounding boxes and confidences"
     )
 
@@ -28,10 +27,10 @@ class OCRResult(BaseModel):
 class OCRRequest(BaseModel):
     """Request model for OCR operations."""
 
-    image_url: Optional[HttpUrl] = Field(
+    image_url: HttpUrl | None = Field(
         None, description="URL of the image to process (mutually exclusive with image_data)"
     )
-    image_data: Optional[str] = Field(
+    image_data: str | None = Field(
         None, description="Base64-encoded image data (mutually exclusive with image_url)"
     )
     language: str = Field("eng", description="Language code for OCR (e.g., 'eng', 'deu', 'fra')")
@@ -99,11 +98,11 @@ class TextPositionResult(BaseModel):
     """Result of a text position search."""
 
     found: bool = Field(..., description="Whether the text was found")
-    x: Optional[int] = Field(None, description="X coordinate of the text")
-    y: Optional[int] = Field(None, description="Y coordinate of the text")
-    width: Optional[int] = Field(None, description="Width of the text region")
-    height: Optional[int] = Field(None, description="Height of the text region")
-    confidence: Optional[float] = Field(None, description="Confidence of the text match (0-100)")
+    x: int | None = Field(None, description="X coordinate of the text")
+    y: int | None = Field(None, description="Y coordinate of the text")
+    width: int | None = Field(None, description="Width of the text region")
+    height: int | None = Field(None, description="Height of the text region")
+    confidence: float | None = Field(None, description="Confidence of the text match (0-100)")
 
     class Config:
         """Pydantic config."""

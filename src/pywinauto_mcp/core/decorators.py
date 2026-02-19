@@ -1,23 +1,21 @@
-"""
-Decorators for PyWinAuto MCP tools and functions.
-"""
+"""Decorators for PyWinAuto MCP tools and functions."""
 
-from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
+from collections.abc import Callable
 from functools import wraps
+from typing import Any, TypeVar, cast
 
 # Type variable for generic function typing
 F = TypeVar("F", bound=Callable[..., Any])
 
 
 def tool(
-    name: Optional[str] = None,
-    description: Optional[str] = None,
+    name: str | None = None,
+    description: str | None = None,
     category: str = "general",
-    input_model: Optional[Any] = None,
-    output_model: Optional[Any] = None,
+    input_model: Any | None = None,
+    output_model: Any | None = None,
 ) -> Callable[[F], F]:
-    """
-    Decorator to mark a function as a tool that can be called via MCP.
+    """Mark a function as a tool that can be called via MCP.
 
     Args:
         name: Tool name (defaults to function name)
@@ -25,6 +23,7 @@ def tool(
         category: Tool category for organization
         input_model: Pydantic model for input validation
         output_model: Pydantic model for output validation
+
     """
 
     def decorator(func: F) -> F:
@@ -46,11 +45,11 @@ def tool(
 
 
 def stateful(requires_state: bool = True) -> Callable[[F], F]:
-    """
-    Decorator to mark a tool as requiring state management.
+    """Mark a tool as requiring state management.
 
     Args:
         requires_state: Whether the tool requires state
+
     """
 
     def decorator(func: F) -> F:

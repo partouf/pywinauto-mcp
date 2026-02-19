@@ -211,7 +211,11 @@ Examples:
                     return {
                         "status": "error",
                         "operation": "find",
-                        "error": "At least one of title, handle, or process_id is required for find operation",
+                        "error": (
+                            "At least one of title, handle,"
+                            " or process_id is required"
+                            " for find operation"
+                        ),
                         "timestamp": timestamp,
                         "metadata": window_system_metadata,
                     }

@@ -1,26 +1,22 @@
-"""
-Face recognition API endpoints for PyWinAutoMCP.
+"""Face recognition API endpoints for PyWinAutoMCP.
 
 This module provides FastAPI routes for face recognition functionality.
 """
 
-from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form, BackgroundTasks
-from fastmcp import mcp
-from pydantic import BaseModel, Field, EmailStr, HttpUrl
-from typing import List, Optional, Dict, Any
-from datetime import datetime
 import base64
-import io
 import sys
 from pathlib import Path
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from fastmcp import mcp
+from pydantic import BaseModel, Field
 
 # Add the project root to the Python path
 project_root = Path(__file__).parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
-from pywinauto_mcp.face_recognition import FaceRecognition, FaceData
-from pywinauto_mcp.security import SecurityLevel
+from pywinauto_mcp.face_recognition import FaceRecognition  # noqa: E402
 
 # Initialize the face recognizer
 face_recognizer = FaceRecognition()
@@ -37,7 +33,7 @@ class FaceEnrollmentRequest(BaseModel):
     """Request model for enrolling a new face."""
 
     name: str = Field(..., description="Name or identifier for the person")
-    image_data: Optional[str] = Field(
+    image_data: str | None = Field(
         None, description="Base64-encoded image data (alternative to image_file)"
     )
 
@@ -55,8 +51,8 @@ class FaceVerificationResponse(BaseModel):
     """Response model for face verification."""
 
     success: bool
-    name: Optional[str] = None
-    confidence: Optional[float] = None
+    name: str | None = None
+    confidence: float | None = None
     message: str
 
 
@@ -65,7 +61,7 @@ class FaceInfo(BaseModel):
 
     name: str
     created_at: str
-    last_used: Optional[str] = None
+    last_used: str | None = None
     usage_count: int = 0
 
 
@@ -74,10 +70,9 @@ class FaceInfo(BaseModel):
 @router.post("/enroll", status_code=status.HTTP_201_CREATED)
 async def enroll_face(
     name: str = Form(...),
-    image_file: UploadFile = File(..., description="Image file containing the face"),
+    image_file: UploadFile = File(..., description="Image file containing the face"),  # noqa: B008
 ):
-    """
-    Enroll a new face for recognition.
+    """Enroll a new face for recognition.
 
     This endpoint allows you to register a new face by providing an image.
     The face will be extracted and stored for future recognition.
@@ -105,14 +100,13 @@ async def enroll_face(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error enrolling face: {str(e)}",
-        )
+        ) from e
 
 
 @mcp.tool("Verify a face")
 @router.post("/verify", response_model=FaceVerificationResponse)
 async def verify_face(request: FaceVerificationRequest) -> FaceVerificationResponse:
-    """
-    Verify a face against known faces.
+    """Verify a face against known faces.
 
     This endpoint takes an image and checks if it matches any known faces.
     Returns the name and confidence score if a match is found.
@@ -142,7 +136,7 @@ async def verify_face(request: FaceVerificationRequest) -> FaceVerificationRespo
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error verifying face: {str(e)}",
-        )
+        ) from e
 
 
 @mcp.tool("Verify face with webcam")
@@ -150,8 +144,7 @@ async def verify_face(request: FaceVerificationRequest) -> FaceVerificationRespo
 async def verify_face_webcam(
     confidence_threshold: float = 0.7, timeout: int = 30
 ) -> FaceVerificationResponse:
-    """
-    Verify a face using the webcam.
+    """Verify a face using the webcam.
 
     This endpoint activates the webcam and attempts to recognize a face.
     It will continue trying until a match is found or the timeout is reached.
@@ -179,20 +172,19 @@ async def verify_face_webcam(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error during face verification: {str(e)}",
-        )
+        ) from e
 
 
 @mcp.tool("List known faces")
-@router.get("/faces", response_model=List[FaceInfo])
+@router.get("/faces", response_model=list[FaceInfo])
 async def list_known_faces():
-    """
-    List all known faces.
+    """List all known faces.
 
     Returns a list of all enrolled faces with their metadata.
     """
     try:
         faces = []
-        for name, face_data in face_recognizer.known_faces.items():
+        for _name, face_data in face_recognizer.known_faces.items():
             faces.append(
                 FaceInfo(
                     name=face_data.name,
@@ -206,14 +198,13 @@ async def list_known_faces():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error listing known faces: {str(e)}",
-        )
+        ) from e
 
 
 @mcp.tool("Remove a known face")
 @router.delete("/faces/{name}")
 async def remove_known_face(name: str):
-    """
-    Remove a known face by name.
+    """Remove a known face by name.
 
     This will delete the face data from the system.
     """
@@ -230,7 +221,7 @@ async def remove_known_face(name: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error removing face: {str(e)}",
-        )
+        ) from e
 
 
 # Register cleanup handler

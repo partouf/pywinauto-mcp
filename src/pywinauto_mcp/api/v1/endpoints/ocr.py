@@ -1,29 +1,27 @@
-"""
-OCR API endpoints for text extraction from images.
+"""OCR API endpoints for text extraction from images.
 
 This module provides endpoints for performing Optical Character Recognition (OCR)
 on images, including text extraction, region-based extraction, and text search.
 """
 
 import logging
-from typing import Dict, List, Optional, Any, Union
+import sys
+from pathlib import Path
+from typing import Any
 
 import cv2
 import numpy as np
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile, status
 from fastmcp import mcp
-from pydantic import BaseModel, Field, HttpUrl
-
-import sys
-from pathlib import Path
+from pydantic import BaseModel, Field
 
 # Add the project root to the Python path
 project_root = Path(__file__).parent.parent.parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
-from pywinauto_mcp.services.ocr_service import OCRService
-from pywinauto_mcp.core.config import get_config
+from pywinauto_mcp.core.config import get_config  # noqa: E402
+from pywinauto_mcp.services.ocr_service import OCRService  # noqa: E402
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -44,7 +42,7 @@ class OCRTextResult(BaseModel):
     text: str = Field(..., description="Extracted text from the image")
     confidence: float = Field(..., description="Confidence score of the OCR result (0-100)")
     language: str = Field(..., description="Language code used for OCR")
-    raw_data: Optional[Dict[str, Any]] = Field(
+    raw_data: dict[str, Any] | None = Field(
         None, description="Raw OCR data including bounding boxes and confidences"
     )
 
@@ -64,7 +62,7 @@ class OCRTextResult(BaseModel):
 class OCRRegionResult(OCRTextResult):
     """Result of text extraction from a specific region of an image."""
 
-    region: Dict[str, int] = Field(
+    region: dict[str, int] = Field(
         ..., description="Region of interest where text was extracted from"
     )
 
@@ -88,10 +86,10 @@ class TextPositionResult(BaseModel):
     success: bool = Field(..., description="Whether the operation was successful")
     found: bool = Field(..., description="Whether the text was found in the image")
     search_text: str = Field(..., description="The text that was searched for")
-    position: Optional[Dict[str, int]] = Field(
+    position: dict[str, int] | None = Field(
         None, description="Position of the found text (x, y, width, height)"
     )
-    confidence: Optional[float] = Field(None, description="Confidence score of the match (0-100)")
+    confidence: float | None = Field(None, description="Confidence score of the match (0-100)")
 
     class Config:
         """Pydantic config."""
@@ -116,12 +114,11 @@ class TextPositionResult(BaseModel):
     response_description="Extracted text and confidence score",
 )
 async def extract_text_from_image(
-    file: UploadFile = File(..., description="Image file to process"),
+    file: UploadFile = File(..., description="Image file to process"),  # noqa: B008
     preprocess: bool = Query(True, description="Apply image preprocessing for better OCR results"),
     lang: str = Query("eng", description="Language code for OCR (e.g., 'eng', 'deu', 'fra')"),
-) -> Dict[str, Any]:
-    """
-    Extract text from an uploaded image file using OCR.
+) -> dict[str, Any]:
+    """Extract text from an uploaded image file using OCR.
 
     This endpoint processes an image and returns the extracted text along with
     confidence scores. The image can be in any common format (JPEG, PNG, etc.).
@@ -136,6 +133,7 @@ async def extract_text_from_image(
 
     Raises:
         HTTPException: If there's an error processing the image
+
     """
     try:
         logger.info("Processing image for text extraction")
@@ -170,7 +168,7 @@ async def extract_text_from_image(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error processing image: {str(e)}",
-        )
+        ) from e
 
 
 @mcp.tool("Extract text from a specific region of an image")
@@ -182,16 +180,15 @@ async def extract_text_from_image(
     response_description="Extracted text and region information",
 )
 async def extract_text_from_region(
-    file: UploadFile = File(..., description="Image file to process"),
+    file: UploadFile = File(..., description="Image file to process"),  # noqa: B008
     x: int = Query(..., ge=0, description="X coordinate of the top-left corner"),
     y: int = Query(..., ge=0, description="Y coordinate of the top-left corner"),
     width: int = Query(..., gt=0, description="Width of the region"),
     height: int = Query(..., gt=0, description="Height of the region"),
     preprocess: bool = Query(True, description="Apply image preprocessing for better OCR results"),
     lang: str = Query("eng", description="Language code for OCR (e.g., 'eng', 'deu', 'fra')"),
-) -> Dict[str, Any]:
-    """
-    Extract text from a specific region of an image using OCR.
+) -> dict[str, Any]:
+    """Extract text from a specific region of an image using OCR.
 
     This endpoint processes a specific region of an image and returns the extracted text.
     The region is defined by its top-left corner (x, y) and dimensions (width, height).
@@ -210,6 +207,7 @@ async def extract_text_from_region(
 
     Raises:
         HTTPException: If there's an error processing the image or region is invalid
+
     """
     try:
         logger.info(
@@ -231,7 +229,10 @@ async def extract_text_from_region(
         if x + width > img_width or y + height > img_height:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Region (x={x}, y={y}, w={width}, h={height}) is outside image boundaries ({img_width}x{img_height})",
+                detail=(
+                    f"Region (x={x}, y={y}, w={width}, h={height}) "
+                    f"is outside image boundaries ({img_width}x{img_height})"
+                ),
             )
 
         # Extract text from the specified region
@@ -262,7 +263,7 @@ async def extract_text_from_region(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error processing image region: {str(e)}",
-        )
+        ) from e
 
 
 @mcp.tool("Find the position of specific text in an image")
@@ -274,13 +275,12 @@ async def extract_text_from_region(
     response_description="Position of the found text or not found status",
 )
 async def find_text_in_image(
-    file: UploadFile = File(..., description="Image file to search in"),
+    file: UploadFile = File(..., description="Image file to search in"),  # noqa: B008
     search_text: str = Query(..., description="Text to search for in the image"),
     lang: str = Query("eng", description="Language code for OCR"),
     case_sensitive: bool = Query(False, description="Whether the search should be case-sensitive"),
-) -> Dict[str, Any]:
-    """
-    Find the position of specific text within an image using OCR.
+) -> dict[str, Any]:
+    """Find the position of specific text within an image using OCR.
 
     This endpoint searches for the specified text in an image and returns
     its position if found. The search can be case-sensitive or case-insensitive.
@@ -296,6 +296,7 @@ async def find_text_in_image(
 
     Raises:
         HTTPException: If there's an error processing the image or if search_text is empty
+
     """
     if not search_text.strip():
         raise HTTPException(
@@ -349,4 +350,4 @@ async def find_text_in_image(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error searching for text in image: {str(e)}",
-        )
+        ) from e

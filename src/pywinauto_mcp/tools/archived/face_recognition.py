@@ -7,6 +7,7 @@ import base64
 import logging
 import os
 import pickle
+import tempfile
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -76,7 +77,8 @@ if app is not None and FACE_RECOGNITION_AVAILABLE:
 
             Args:
                 known_faces_dir: Directory to store known face encodings
-                tolerance: How much distance between faces to consider it a match. Lower is more strict.
+                tolerance: How much distance between faces to consider
+                    it a match. Lower is more strict.
                 model: Which face detection model to use. 'hog' is faster, 'cnn' is more accurate.
                 encryption_key: Key for encrypting face data
 
@@ -525,6 +527,7 @@ else:
         description="Face recognition not available. Install the face_recognition library.",
     )
     def add_face(name: str, image_path: str) -> dict[str, Any]:
+        """Add a face (unavailable without face_recognition library)."""
         return {
             "status": "error",
             "error": "Face recognition not available. Install the face_recognition library.",
@@ -535,6 +538,7 @@ else:
         description="Face recognition not available. Install the face_recognition library.",
     )
     def recognize_face(image_path: str) -> dict[str, Any]:
+        """Recognize a face (unavailable without face_recognition library)."""
         return {
             "status": "error",
             "error": "Face recognition not available. Install the face_recognition library.",
@@ -545,6 +549,7 @@ else:
         description="Face recognition not available. Install the face_recognition library.",
     )
     def list_known_faces() -> dict[str, Any]:
+        """List known faces (unavailable without face_recognition library)."""
         return {
             "status": "error",
             "error": "Face recognition not available. Install the face_recognition library.",
@@ -555,6 +560,7 @@ else:
         description="Face recognition not available. Install the face_recognition library.",
     )
     def delete_face(name: str) -> dict[str, Any]:
+        """Delete a face (unavailable without face_recognition library)."""
         return {
             "status": "error",
             "error": "Face recognition not available. Install the face_recognition library.",
@@ -567,6 +573,7 @@ else:
     def capture_and_recognize(
         camera_index: int = 0, save_path: str | None = None
     ) -> dict[str, Any]:
+        """Capture and recognize (unavailable without face_recognition library)."""
         return {
             "status": "error",
             "error": "Face recognition not available. Install the face_recognition library.",

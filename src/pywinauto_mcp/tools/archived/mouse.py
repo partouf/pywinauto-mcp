@@ -1,6 +1,7 @@
 """Mouse interaction tools for PyWinAuto MCP.
 
-This module provides mouse-related functionality including movement, clicking, dragging, and scrolling.
+This module provides mouse-related functionality including movement,
+clicking, dragging, and scrolling.
 """
 
 import logging
@@ -199,7 +200,7 @@ if app is not None:
             # Ensure mouse button is released on error
             try:
                 pyautogui.mouseUp(button="left")
-            except:
+            except Exception:
                 pass
 
             return {"status": "error", "error": str(e), "error_type": type(e).__name__}

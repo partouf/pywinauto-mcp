@@ -37,7 +37,7 @@ class SuccessResponse(BaseModel):
 
 
 def handle_errors(func: F) -> Callable[..., dict[str, Any]]:
-    """Decorator to handle errors and standardize responses.
+    """Handle errors and standardize responses.
 
     Args:
         func: The function to wrap
@@ -80,7 +80,7 @@ def handle_errors(func: F) -> Callable[..., dict[str, Any]]:
 
 
 def log_execution(func: F) -> Callable[..., Any]:
-    """Decorator to log function execution details.
+    """Log function execution details.
 
     Args:
         func: The function to wrap
@@ -138,7 +138,7 @@ def register_tool(
     requires_auth: bool = True,
     rate_limited: bool = True,
 ):
-    """Decorator to register a function as a tool with FastMCP.
+    """Register a function as a tool with FastMCP.
 
     This is a compatibility layer that works with FastMCP 2.12's auto-discovery.
     The actual registration happens when the module is imported and the decorator runs.

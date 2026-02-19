@@ -212,7 +212,7 @@ if app is not None:
             matches = []
             h, w = template.shape[:2]
 
-            for pt in zip(*locations[::-1]):
+            for pt in zip(*locations[::-1], strict=False):
                 matches.append([pt[0], pt[1], w, h])
 
             # Apply non-maximum suppression to remove overlapping matches

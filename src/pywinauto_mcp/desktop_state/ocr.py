@@ -1,21 +1,18 @@
-"""
-OCR Text Extractor - Extract text from UI elements using OCR
-"""
+"""OCR Text Extractor - Extract text from UI elements using OCR."""
 
-from typing import List, Dict, Optional
 import pytesseract
 from PIL import Image
 
 
 class OCRExtractor:
-    """Extract text from UI elements using OCR"""
+    """Extract text from UI elements using OCR."""
 
-    def __init__(self, tesseract_cmd: Optional[str] = None):
+    def __init__(self, tesseract_cmd: str | None = None):
         if tesseract_cmd:
             pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
 
-    def enhance_elements(self, elements: List[Dict], screenshot: Image) -> List[Dict]:
-        """Add OCR text to elements without readable text"""
+    def enhance_elements(self, elements: list[dict], screenshot: Image) -> list[dict]:
+        """Add OCR text to elements without readable text."""
         for elem in elements:
             # Skip if already has good text
             if elem.get("name") and len(elem["name"].strip()) >= 2:
@@ -28,8 +25,8 @@ class OCRExtractor:
 
         return elements
 
-    def _extract_text(self, elem: Dict, screenshot: Image) -> str:
-        """OCR text from element region"""
+    def _extract_text(self, elem: dict, screenshot: Image) -> str:
+        """OCR text from element region."""
         try:
             bounds = elem["bounds"]
 

@@ -160,7 +160,8 @@ if app is not None:
 
     @app.tool(
         name="automation_face",
-        description="""Face recognition and multimodal identity automation tracking SOTA 2026 standards.
+        description="""Face recognition and multimodal identity automation
+tracking SOTA 2026 standards.
 
 SUPPORTED OPERATIONS:
 - add: Enrolls a new face into the biometric database from an image file.
@@ -207,7 +208,10 @@ Examples:
                 return {
                     "status": "error",
                     "operation": operation,
-                    "error": "face_recognition library not installed. Install with: pip install face_recognition",
+                    "error": (
+                        "face_recognition library not installed."
+                        " Install with: pip install face_recognition"
+                    ),
                 }
 
             if face_manager is None:

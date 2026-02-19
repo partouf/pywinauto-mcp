@@ -1,10 +1,11 @@
-"""
-OCR Service for extracting text from images using Tesseract OCR.
+"""OCR Service for text extraction.
+
+Extract text from images using Tesseract OCR.
 """
 
 import logging
-from pathlib import Path
-from typing import Optional, Tuple, Dict, Any
+from typing import Any
+
 import cv2
 import numpy as np
 import pytesseract
@@ -16,12 +17,13 @@ logger = logging.getLogger(__name__)
 class OCRService:
     """Service for Optical Character Recognition operations."""
 
-    def __init__(self, tesseract_cmd: Optional[str] = None):
+    def __init__(self, tesseract_cmd: str | None = None):
         """Initialize the OCR service.
 
         Args:
             tesseract_cmd: Path to the Tesseract executable. If None,
                          the system PATH will be used.
+
         """
         if tesseract_cmd:
             pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
@@ -29,7 +31,7 @@ class OCRService:
         # Verify Tesseract is installed and accessible
         try:
             pytesseract.get_tesseract_version()
-        except pytesseract.TesseractNotFoundError as e:
+        except pytesseract.TesseractNotFoundError:
             logger.error(
                 "Tesseract is not installed or not in your PATH. "
                 "Please install it from https://github.com/UB-Mannheim/tesseract/wiki"
@@ -44,6 +46,7 @@ class OCRService:
 
         Returns:
             Preprocessed image as a numpy array
+
         """
         # Convert to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -59,12 +62,12 @@ class OCRService:
 
     def extract_text(
         self,
-        image_path: Optional[str] = None,
-        image: Optional[np.ndarray] = None,
+        image_path: str | None = None,
+        image: np.ndarray | None = None,
         preprocess: bool = True,
         lang: str = "eng",
         config: str = "--psm 6 --oem 3",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Extract text from an image file or numpy array.
 
         Args:
@@ -79,6 +82,7 @@ class OCRService:
                 - text: Extracted text
                 - confidence: Average confidence of the OCR result
                 - data: Raw Tesseract data
+
         """
         if image_path and image is None:
             # Read image from file
@@ -116,7 +120,7 @@ class OCRService:
 
     def extract_text_from_region(
         self, image: np.ndarray, x: int, y: int, width: int, height: int, **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Extract text from a specific region of an image.
 
         Args:
@@ -129,6 +133,7 @@ class OCRService:
 
         Returns:
             Dictionary with OCR results (same as extract_text)
+
         """
         # Extract the region of interest
         roi = image[y : y + height, x : x + width]
@@ -140,7 +145,7 @@ class OCRService:
         search_text: str,
         lang: str = "eng",
         case_sensitive: bool = False,
-    ) -> Optional[Tuple[int, int, int, int]]:
+    ) -> tuple[int, int, int, int] | None:
         """Find the position of specific text in an image.
 
         Args:
@@ -151,6 +156,7 @@ class OCRService:
 
         Returns:
             Tuple of (x, y, width, height) of the found text, or None if not found
+
         """
         # Extract text with character-level positioning
         data = self.extract_text(image=image, lang=lang)["data"]

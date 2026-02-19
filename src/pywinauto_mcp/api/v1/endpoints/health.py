@@ -1,22 +1,21 @@
-"""
-Health check endpoints for PyWinAutoMCP.
+"""Health check endpoints for PyWinAutoMCP.
 
 This module provides health check and status endpoints for the PyWinAutoMCP API.
 """
 
+from typing import Any
+
 from fastapi import APIRouter
 from fastmcp import mcp
-from typing import Dict, Any
 
 # Create router
 router = APIRouter()
 
 
 @mcp.tool("Check if the service is running")
-@router.get("/health", response_model=Dict[str, Any])
-async def health_check() -> Dict[str, Any]:
-    """
-    Health check endpoint.
+@router.get("/health", response_model=dict[str, Any])
+async def health_check() -> dict[str, Any]:
+    """Health check endpoint.
 
     Returns the current status of the PyWinAutoMCP service.
     """
@@ -24,10 +23,9 @@ async def health_check() -> Dict[str, Any]:
 
 
 @mcp.tool("Get service status and version information")
-@router.get("/status", response_model=Dict[str, Any])
-async def status() -> Dict[str, Any]:
-    """
-    Get detailed status information about the service.
+@router.get("/status", response_model=dict[str, Any])
+async def status() -> dict[str, Any]:
+    """Get detailed status information about the service.
 
     Returns version information and service status.
     """

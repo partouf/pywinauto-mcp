@@ -64,7 +64,8 @@ SUPPORTED OPERATIONS:
 - terminal: Executes privileged shell operations with secure feedback.
 
 DIALOGIC RETURN PATTERN:
-If system resources are constrained or security triggers are identified, returns clarification_needed.
+If system resources are constrained or security triggers are
+identified, returns clarification_needed.
 
 Examples:
     automation_system("status")
@@ -117,8 +118,10 @@ Examples:
         - start_app: Launches an executable with verification and search fallbacks.
 
         DIALOGIC RETURN PATTERN:
-        This tool implements the SOTA 2026 Dialogic Return Pattern for ambiguity resolution.
-        When system resources are constrained or security triggers are identified, it does not fail with a
+        This tool implements the SOTA 2026 Dialogic Return Pattern
+        for ambiguity resolution.
+        When system resources are constrained or security triggers
+        are identified, it does not fail with a
         standard error. Instead, it transitions to a status of clarification_needed.
         In this state, the tool returns structured metadata containing identified
         available_tools such as WizFile or WizTree found on the host system.
@@ -146,7 +149,8 @@ Examples:
             filter (str | None): Optional filter string for process names.
 
         Returns:
-            dict[str, Any]: Operation-specific result dictionary with system metadata and diagnostics.
+            dict[str, Any]: Operation-specific result dictionary
+                with system metadata and diagnostics.
 
         """
         try:
@@ -168,7 +172,7 @@ Examples:
                     "diagnostics": system_metadata,
                 }
 
-            # === HELP OPERATION (kept for backward compatibility, though not in new description) ===
+            # === HELP OPERATION (backward compat, not in new desc) ===
             elif operation == "help":
                 help_info = {
                     "server": "PyWinAuto MCP v0.3.0",

@@ -1,19 +1,18 @@
-"""
-Face recognition module for PyWinAutoMCP security features.
+"""Face recognition module for PyWinAutoMCP security features.
 
 This module provides face recognition capabilities for user verification.
 """
 
-import os
+import base64
+import logging
 import pickle
-import numpy as np
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from pathlib import Path
+
 import cv2
 import face_recognition
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass, asdict
-import logging
-import base64
+import numpy as np
 from cryptography.fernet import Fernet
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ class FaceData:
     name: str
     encoding: bytes
     created_at: str
-    last_used: Optional[str] = None
+    last_used: str | None = None
     usage_count: int = 0
 
 
@@ -39,16 +38,16 @@ class FaceRecognition:
     """Handles face recognition operations."""
 
     def __init__(self, tolerance: float = 0.6, model: str = "hog"):
-        """
-        Initialize face recognition.
+        """Initialize face recognition.
 
         Args:
             tolerance: How much distance between faces to consider it a match. Lower is more strict.
             model: Which face detection model to use. 'hog' is faster, 'cnn' is more accurate.
+
         """
         self.tolerance = tolerance
         self.model = model
-        self.known_faces: Dict[str, FaceData] = {}
+        self.known_faces: dict[str, FaceData] = {}
         self.cipher_suite = Fernet(base64.urlsafe_b64encode(ENCRYPTION_KEY))
         self.load_known_faces()
 
@@ -92,10 +91,9 @@ class FaceRecognition:
                 logger.error(f"Error saving face data for {name}: {e}")
 
     def add_known_face(
-        self, name: str, image_path: Optional[str] = None, image_data: Optional[bytes] = None
+        self, name: str, image_path: str | None = None, image_data: bytes | None = None
     ) -> bool:
-        """
-        Add a new known face.
+        """Add a new known face.
 
         Args:
             name: Name or identifier for the person
@@ -104,6 +102,7 @@ class FaceRecognition:
 
         Returns:
             bool: True if face was added successfully
+
         """
         if not image_path and not image_data:
             raise ValueError("Either image_path or image_data must be provided")
@@ -157,15 +156,15 @@ class FaceRecognition:
             return True
         return False
 
-    def recognize_face(self, image_data: bytes) -> Tuple[bool, Optional[str], float]:
-        """
-        Recognize a face from image data.
+    def recognize_face(self, image_data: bytes) -> tuple[bool, str | None, float]:
+        """Recognize a face from image data.
 
         Args:
             image_data: Raw image data as bytes
 
         Returns:
             Tuple of (success, name, confidence)
+
         """
         try:
             # Convert image data to numpy array
@@ -188,7 +187,9 @@ class FaceRecognition:
             face_encodings = face_recognition.face_encodings(rgb_image, face_locations)
 
             # Compare with known faces
-            for face_encoding, (top, right, bottom, left) in zip(face_encodings, face_locations):
+            for face_encoding, (_top, _right, _bottom, _left) in zip(
+                face_encodings, face_locations, strict=False
+            ):
                 # Check if the face matches any known faces
                 for name, face_data in self.known_faces.items():
                     known_encoding = self.decrypt_encoding(face_data.encoding)
@@ -220,9 +221,8 @@ class FaceRecognition:
 
     def capture_and_verify_face(
         self, timeout: int = 30, confidence_threshold: float = 0.7
-    ) -> Tuple[bool, Optional[str], float]:
-        """
-        Capture video from webcam and try to recognize a face.
+    ) -> tuple[bool, str | None, float]:
+        """Capture video from webcam and try to recognize a face.
 
         Args:
             timeout: Maximum time to try recognizing (seconds)
@@ -230,6 +230,7 @@ class FaceRecognition:
 
         Returns:
             Tuple of (success, name, confidence)
+
         """
         import time
         from datetime import datetime, timedelta
@@ -273,7 +274,7 @@ class FaceRecognition:
 
                     # Loop through each face in this frame of video
                     for (top, right, bottom, left), face_encoding in zip(
-                        face_locations, face_encodings
+                        face_locations, face_encodings, strict=False
                     ):
                         # Check if the face matches any known faces
                         for name, face_data in self.known_faces.items():
