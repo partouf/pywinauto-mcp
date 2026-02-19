@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 import sys
 sys.path.append(str(Path(__file__).parent.parent))
 
+face_recognition = pytest.importorskip("face_recognition", reason="face_recognition requires dlib/cmake")
 from pywinauto_mcp.face_recognition import FaceRecognition, FaceData
 
 # Test data
