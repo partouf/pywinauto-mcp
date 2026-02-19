@@ -124,6 +124,36 @@ def _get_element_info(element) -> dict[str, Any]:
     return info
 
 
+def _find_element(window, control_id=None, auto_id=None, title=None, class_name=None, control_type=None):
+    """Find a child element using any combination of available selectors.
+
+    Builds a selector dict from whichever parameters are provided and passes
+    them to pywinauto's child_window().  Returns (element, selector_desc) where
+    selector_desc is a human-readable string describing the criteria used.
+    Raises ValueError when no selector is given.
+    """
+    kwargs = {}
+    parts = []
+    if control_id is not None:
+        kwargs["control_id"] = control_id
+        parts.append(f"control_id='{control_id}'")
+    if auto_id is not None:
+        kwargs["auto_id"] = auto_id
+        parts.append(f"auto_id='{auto_id}'")
+    if title is not None:
+        kwargs["title"] = title
+        parts.append(f"title='{title}'")
+    if class_name is not None:
+        kwargs["class_name"] = class_name
+        parts.append(f"class_name='{class_name}'")
+    if control_type is not None:
+        kwargs["control_type"] = control_type
+        parts.append(f"control_type='{control_type}'")
+    if not kwargs:
+        raise ValueError("At least one selector (control_id, auto_id, title, class_name, control_type) is required")
+    return window.child_window(**kwargs), ", ".join(parts)
+
+
 if app is not None:
     logger.info("Registering portmanteau_elements tool with FastMCP")
 
@@ -131,8 +161,20 @@ if app is not None:
         name="automation_elements",
         description="""Comprehensive UI element interaction tool for Windows automation.
 
+ELEMENT SELECTION:
+Elements can be targeted using any combination of these selectors:
+- control_id: Win32 or symbolic control identifier
+- auto_id: UIA AutomationId for precise targeting
+- title: Element name/title text (human-readable label)
+- class_name: Windows class name
+- control_type: UI role (e.g., "Button", "Edit", "ComboBox")
+
+You can combine selectors to narrow matches (e.g., title="Username" + control_type="Edit").
+This means you do NOT need to call "list" first to discover control_ids - you can target
+elements directly by their visible title or automation id.
+
 SUPPORTED OPERATIONS:
-- click: Click on element (by control_id or coordinates)
+- click: Click on element (by selector or coordinates)
 - double_click: Double-click on element
 - right_click: Right-click on element
 - hover: Hover over element for specified duration
@@ -148,9 +190,21 @@ SUPPORTED OPERATIONS:
 - list: Get all elements in window (with depth control)
 
 Examples:
+    # Target by title (no need to discover control_id first)
+    automation_elements("set_text", window_handle=12345, title="Username", text="admin")
+    automation_elements("set_text", window_handle=12345, title="Password", text="secret")
+    automation_elements("click", window_handle=12345, title="Login")
+
+    # Target by automation id
+    automation_elements("click", window_handle=12345, auto_id="btnSubmit")
+
+    # Target by control_id (classic approach)
     automation_elements("click", window_handle=12345, control_id="btnOK")
-    automation_elements("info", window_handle=12345, control_id="Edit1")
-    automation_elements("set_text", window_handle=12345, control_id="Edit1", text="Hello")
+
+    # Combine selectors for precision
+    automation_elements("set_text", window_handle=12345, title="Name", control_type="Edit", text="Hello")
+
+    # List all elements (for discovery when selectors are unknown)
     automation_elements("list", window_handle=12345, max_depth=3)
 
 """,
@@ -311,19 +365,20 @@ Examples:
 
             # === CLICK OPERATION ===
             if operation == "click":
-                if control_id:
-                    element = window.child_window(control_id=control_id)
+                has_selector = any(v is not None for v in [control_id, auto_id, title, class_name, control_type])
+                if has_selector:
+                    element, desc = _find_element(window, control_id, auto_id, title, class_name, control_type)
                     if not element.exists():
                         return {
                             "status": "error",
                             "operation": "click",
-                            "error": f"Element with control_id '{control_id}' not found",
+                            "error": f"Element with {desc} not found",
                         }
                     element.click(button=button)
                     return {
                         "status": "success",
                         "operation": "click",
-                        "control_id": control_id,
+                        "selector": desc,
                         "button": button,
                         "timestamp": timestamp,
                     }
@@ -346,24 +401,25 @@ Examples:
                     return {
                         "status": "error",
                         "operation": "click",
-                        "error": "Either control_id or both x and y must be provided",
+                        "error": "Either a selector (control_id, auto_id, title, class_name, control_type) or both x and y must be provided",
                     }
 
             # === DOUBLE_CLICK OPERATION ===
             elif operation == "double_click":
-                if control_id:
-                    element = window.child_window(control_id=control_id)
+                has_selector = any(v is not None for v in [control_id, auto_id, title, class_name, control_type])
+                if has_selector:
+                    element, desc = _find_element(window, control_id, auto_id, title, class_name, control_type)
                     if not element.exists():
                         return {
                             "status": "error",
                             "operation": "double_click",
-                            "error": f"Element with control_id '{control_id}' not found",
+                            "error": f"Element with {desc} not found",
                         }
                     element.double_click(button=button)
                     return {
                         "status": "success",
                         "operation": "double_click",
-                        "control_id": control_id,
+                        "selector": desc,
                         "button": button,
                         "timestamp": timestamp,
                     }
@@ -386,24 +442,25 @@ Examples:
                     return {
                         "status": "error",
                         "operation": "double_click",
-                        "error": "Either control_id or both x and y must be provided",
+                        "error": "Either a selector (control_id, auto_id, title, class_name, control_type) or both x and y must be provided",
                     }
 
             # === RIGHT_CLICK OPERATION ===
             elif operation == "right_click":
-                if control_id:
-                    element = window.child_window(control_id=control_id)
+                has_selector = any(v is not None for v in [control_id, auto_id, title, class_name, control_type])
+                if has_selector:
+                    element, desc = _find_element(window, control_id, auto_id, title, class_name, control_type)
                     if not element.exists():
                         return {
                             "status": "error",
                             "operation": "right_click",
-                            "error": f"Element with control_id '{control_id}' not found",
+                            "error": f"Element with {desc} not found",
                         }
                     element.click(button="right")
                     return {
                         "status": "success",
                         "operation": "right_click",
-                        "control_id": control_id,
+                        "selector": desc,
                         "timestamp": timestamp,
                     }
                 elif x is not None and y is not None:
@@ -424,18 +481,19 @@ Examples:
                     return {
                         "status": "error",
                         "operation": "right_click",
-                        "error": "Either control_id or both x and y must be provided",
+                        "error": "Either a selector (control_id, auto_id, title, class_name, control_type) or both x and y must be provided",
                     }
 
             # === HOVER OPERATION ===
             elif operation == "hover":
-                if control_id:
-                    element = window.child_window(control_id=control_id)
+                has_selector = any(v is not None for v in [control_id, auto_id, title, class_name, control_type])
+                if has_selector:
+                    element, desc = _find_element(window, control_id, auto_id, title, class_name, control_type)
                     if not element.exists():
                         return {
                             "status": "error",
                             "operation": "hover",
-                            "error": f"Element with control_id '{control_id}' not found",
+                            "error": f"Element with {desc} not found",
                         }
                     rect = element.rectangle()
                     center_x = rect.left + (rect.width() // 2)
@@ -445,7 +503,7 @@ Examples:
                     return {
                         "status": "success",
                         "operation": "hover",
-                        "control_id": control_id,
+                        "selector": desc,
                         "position": (center_x, center_y),
                         "duration": duration,
                         "timestamp": timestamp,
@@ -468,18 +526,19 @@ Examples:
                     return {
                         "status": "error",
                         "operation": "hover",
-                        "error": "Either control_id or both x and y must be provided",
+                        "error": "Either a selector (control_id, auto_id, title, class_name, control_type) or both x and y must be provided",
                     }
 
-            # === OPERATIONS REQUIRING CONTROL_ID ===
-            if not control_id:
+            # === OPERATIONS REQUIRING AN ELEMENT SELECTOR ===
+            has_selector = any(v is not None for v in [control_id, auto_id, title, class_name, control_type])
+            if not has_selector:
                 return {
                     "status": "error",
                     "operation": operation,
-                    "error": f"control_id parameter is required for {operation} operation",
+                    "error": f"At least one selector (control_id, auto_id, title, class_name, control_type) is required for {operation} operation",
                 }
 
-            element = window.child_window(control_id=control_id)
+            element, selector_desc = _find_element(window, control_id, auto_id, title, class_name, control_type)
 
             # === INFO OPERATION ===
             if operation == "info":
@@ -487,7 +546,7 @@ Examples:
                     return {
                         "status": "error",
                         "operation": "info",
-                        "error": f"Element with control_id '{control_id}' not found",
+                        "error": f"Element with {selector_desc} not found",
                     }
                 info = _get_element_info(element)
                 info["status"] = "success"
@@ -501,12 +560,12 @@ Examples:
                     return {
                         "status": "error",
                         "operation": "text",
-                        "error": f"Element with control_id '{control_id}' not found",
+                        "error": f"Element with {selector_desc} not found",
                     }
                 return {
                     "status": "success",
                     "operation": "text",
-                    "control_id": control_id,
+                    "selector": selector_desc,
                     "text": element.window_text(),
                     "timestamp": timestamp,
                 }
@@ -523,7 +582,7 @@ Examples:
                     return {
                         "status": "error",
                         "operation": "set_text",
-                        "error": f"Element with control_id '{control_id}' not found",
+                        "error": f"Element with {selector_desc} not found",
                     }
 
                 try:
@@ -539,7 +598,7 @@ Examples:
                 return {
                     "status": "success",
                     "operation": "set_text",
-                    "control_id": control_id,
+                    "selector": selector_desc,
                     "text_set": text,
                     "method": method,
                     "timestamp": timestamp,
@@ -551,13 +610,13 @@ Examples:
                     return {
                         "status": "error",
                         "operation": "rect",
-                        "error": f"Element with control_id '{control_id}' not found",
+                        "error": f"Element with {selector_desc} not found",
                     }
                 rect = element.rectangle()
                 return {
                     "status": "success",
                     "operation": "rect",
-                    "control_id": control_id,
+                    "selector": selector_desc,
                     "left": rect.left,
                     "top": rect.top,
                     "right": rect.right,
@@ -573,12 +632,12 @@ Examples:
                     return {
                         "status": "error",
                         "operation": "visible",
-                        "error": f"Element with control_id '{control_id}' not found",
+                        "error": f"Element with {selector_desc} not found",
                     }
                 return {
                     "status": "success",
                     "operation": "visible",
-                    "control_id": control_id,
+                    "selector": selector_desc,
                     "is_visible": element.is_visible(),
                     "timestamp": timestamp,
                 }
@@ -589,12 +648,12 @@ Examples:
                     return {
                         "status": "error",
                         "operation": "enabled",
-                        "error": f"Element with control_id '{control_id}' not found",
+                        "error": f"Element with {selector_desc} not found",
                     }
                 return {
                     "status": "success",
                     "operation": "enabled",
-                    "control_id": control_id,
+                    "selector": selector_desc,
                     "is_enabled": element.is_enabled(),
                     "timestamp": timestamp,
                 }
@@ -607,7 +666,7 @@ Examples:
                         return {
                             "status": "success",
                             "operation": "exists",
-                            "control_id": control_id,
+                            "selector": selector_desc,
                             "exists": True,
                             "wait_time": time.time() - start_time,
                             "timestamp": timestamp,
@@ -617,7 +676,7 @@ Examples:
                 return {
                     "status": "success",
                     "operation": "exists",
-                    "control_id": control_id,
+                    "selector": selector_desc,
                     "exists": False,
                     "timeout": timeout,
                     "timestamp": timestamp,
@@ -631,7 +690,7 @@ Examples:
                         return {
                             "status": "success",
                             "operation": "wait",
-                            "control_id": control_id,
+                            "selector": selector_desc,
                             "found": True,
                             "wait_time": time.time() - start_time,
                             "element": _get_element_info(element),
@@ -642,7 +701,7 @@ Examples:
                 return {
                     "status": "error",
                     "operation": "wait",
-                    "control_id": control_id,
+                    "selector": selector_desc,
                     "error": f"Element not found within {timeout} seconds",
                 }
 
@@ -658,7 +717,7 @@ Examples:
                     return {
                         "status": "error",
                         "operation": "verify_text",
-                        "error": f"Element with control_id '{control_id}' not found",
+                        "error": f"Element with {selector_desc} not found",
                     }
 
                 actual_text = element.window_text()
@@ -670,7 +729,7 @@ Examples:
                 return {
                     "status": "success" if matches else "failure",
                     "operation": "verify_text",
-                    "control_id": control_id,
+                    "selector": selector_desc,
                     "expected_text": expected_text,
                     "actual_text": actual_text,
                     "exact_match": exact_match,

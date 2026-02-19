@@ -47,19 +47,33 @@ automation_windows("position", handle=12345, x=100, y=100, width=800, height=600
 ```
 
 ### 🎯 Element Interaction (`automation_elements`)
+
+Elements can be targeted by `title`, `auto_id`, `class_name`, `control_type`, or `control_id` — no need to call `list` first to discover control IDs. Selectors can be combined for precision.
+
 ```python
-# Click elements
+# Target elements directly by title (recommended for fewer round-trips)
+automation_elements("set_text", window_handle=12345, title="Username", text="admin")
+automation_elements("set_text", window_handle=12345, title="Password", text="secret")
+automation_elements("click", window_handle=12345, title="Login")
+
+# Target by automation id
+automation_elements("click", window_handle=12345, auto_id="btnSubmit")
+
+# Target by control_id (classic approach)
 automation_elements("click", window_handle=12345, control_id="btnOK")
-automation_elements("double_click", window_handle=12345, control_id="listItem")
+
+# Combine selectors for precision
+automation_elements("set_text", window_handle=12345, title="Name", control_type="Edit", text="Hello!")
+
+# Click by coordinates (relative to window)
 automation_elements("right_click", window_handle=12345, x=100, y=200)
 
-# Get/set text
-automation_elements("text", window_handle=12345, control_id="Edit1")
-automation_elements("set_text", window_handle=12345, control_id="Edit1", text="Hello!")
-
 # Wait and verify
-automation_elements("wait", window_handle=12345, control_id="loading", timeout=10.0)
-automation_elements("verify_text", window_handle=12345, control_id="status", expected_text="Ready")
+automation_elements("wait", window_handle=12345, title="Status", timeout=10.0)
+automation_elements("verify_text", window_handle=12345, title="Status", expected_text="Ready")
+
+# List all elements (for discovery when selectors are unknown)
+automation_elements("list", window_handle=12345, max_depth=3)
 ```
 
 ### 🖱️ Mouse Control (`automation_mouse`)
