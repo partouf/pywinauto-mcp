@@ -48,7 +48,7 @@ automation_windows("position", handle=12345, x=100, y=100, width=800, height=600
 
 ### 🎯 Element Interaction (`automation_elements`)
 
-Elements can be targeted by `title`, `auto_id`, `class_name`, `control_type`, or `control_id` — no need to call `list` first to discover control IDs. Selectors can be combined for precision.
+Elements can be targeted by `title`, `auto_id`, `class_name`, `control_type`, or `control_id`. Selectors can be combined for precision.
 
 ```python
 # Target elements directly by title (recommended for fewer round-trips)
