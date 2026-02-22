@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Delphi Bridge Integration**: New `delphi_bridge.py` client for communicating with DelphiUITestExposer HTTP servers embedded in Delphi applications. Discovers the bridge by scanning listening TCP ports and probing for the `/forms` endpoint. Auto-reconnects when the app restarts on a different port.
+- **`delphi_activeform` tool**: Standalone tool that lists interactive controls on the currently active Delphi form via the bridge's `/activeform/controls` endpoint. No window handle needed — just call `delphi_activeform()`. Returns a compact flat list filtered to actionable controls only. Supports `include_labels`, `include_containers`, `include_hidden` flags. Also detects native Win32 dialogs (MessageBox, TaskDialog, Open/Save) that the bridge cannot see.
+- **`automation_batch` tool**: Execute multiple element operations (click, set_text, wait) in one call. Reduces round-trips for form-filling workflows. Stops on first error with detailed failure info.
+- **`anchor` parameter for clicks**: `_bridge_click`, `automation_elements("click")`, and `automation_batch` click steps support `anchor` (center, right, left, top, bottom) to click specific edges of a control — e.g. dropdown buttons on combo fields.
+- **Bridge-first `rect` operation**: `automation_elements("rect")` tries the Delphi bridge first (using `GetWindowRect` for exact screen coordinates), falling back to UIA. UIA cannot see many VCL controls like `TDBrosGridFieldEditor`.
+- **Native Win32 dialog detection**: `delphi_activeform` scans for `#32770` dialogs (MessageBox, TaskDialog, Open/Save) owned by the same process. Reports their child controls (buttons, edits, combos, static text) so agents can dismiss blocking popups.
+- **Delphi component Name as `automation_id`**: The bridge maps each Delphi control's `Name` property (e.g. `TE_Username`, `Btn_Login`) to `automation_id` in element results, making it the preferred selector for Delphi apps.
+- **Bridge-first element operations**: `automation_elements` operations (`list`, `click`, `set_text`, `rect`) try the Delphi bridge first, seeing all controls including non-windowed VCL controls (TSpeedButton, TcxButton, TLabel, etc.) that Win32 API cannot enumerate.
+- **`active_form_only` parameter**: Defaults to `True` in both `automation_elements` and `automation_batch`. Restricts bridge lookups to the currently active form, avoiding name collisions when the same `auto_id` exists on multiple forms.
+- **`window_title` parameter**: `automation_elements` now accepts `window_title` as an alternative to `window_handle`, skipping the window discovery step.
+- **Smart output filtering in `delphi_activeform`**: Skips non-interactive controls by default — inner composite parts (TcxCustomDropDownInnerEdit, TDBrosGridFieldEditor), labels (TLabel, TcxLabel), layout containers (TPanel, TScrollBox), and controls without an `automation_id`. Reduces output from ~130K to ~30K chars.
+
+### Fixed
+- **`basic_tools` import error**: Fixed startup error `cannot import name 'basic_tools' from 'pywinauto_mcp.tools'` — the stale import in `main.py` now correctly imports the tools package.
+- **Backend not passed to `Application().start()`**: `portmanteau_system.py` now passes `settings.PYWINAUTO_BACKEND` when starting applications.
+- **Bridge click not working**: `_bridge_click` now uses physical mouse input (pyautogui) instead of Win32 message-based clicks which Delphi/DevExpress controls ignore. Uses `GetWindowRect` for windowed controls to get exact screen coordinates regardless of nesting depth.
+- **Bridge set_text not working**: All `set_text` paths now use click-to-focus + keyboard input (`Ctrl+A`, `Delete`, type). `WM_SETTEXT` was removed entirely — it updates the Win32 buffer but doesn't notify VCL/DevExpress, causing broken internal state. Win32 `SetFocus` API was also replaced with physical click because `SetForegroundWindow` on MDI parents overrides `SetFocus` calls.
+- **Bridge auto-reconnect**: `DelphiBridge._get()` detects connection failures and automatically re-discovers the bridge on a new port when the app restarts.
+- **Ruff D203/D213 warnings**: Added explicit ignores in `pyproject.toml` for incompatible docstring rules.
+
+### Removed
+- **UIA multiprocessing fallback**: Removed dead `_uia_find_and_click()` function from `portmanteau_elements.py` — fully superseded by the Delphi bridge.
+- **`WM_SETTEXT` code path**: Removed entirely from `portmanteau_elements.py` — all text input now uses keyboard.
+
 ## [0.3.1] - 2026-01-25
 
 ### Fixed
@@ -62,7 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 📊 Version Information
 
-- **Current Version**: 0.2.0
+- **Current Version**: 0.4.0-dev
 - **Python Support**: 3.10, 3.11, 3.12
 - **Platform**: Windows 10/11
 - **License**: MIT

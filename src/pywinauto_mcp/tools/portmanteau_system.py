@@ -29,6 +29,8 @@ import pygetwindow as gw
 import pywinauto
 from pywinauto import Application
 
+from pywinauto_mcp.config import settings
+
 # Import the FastMCP app instance
 try:
     from pywinauto_mcp.app import app
@@ -474,8 +476,13 @@ Examples:
                             }
 
                     # Start the application
-                    logger.info(f"Starting application: {app_path}")
-                    app_instance = Application().start(app_path, work_dir=work_dir)
+                    logger.info(
+                        f"Starting application: {app_path}"
+                        f" (backend={settings.PYWINAUTO_BACKEND})"
+                    )
+                    app_instance = Application(backend=settings.PYWINAUTO_BACKEND).start(
+                        app_path, work_dir=work_dir
+                    )
 
                     return {
                         "status": "success",

@@ -1,31 +1,34 @@
 # PyWinAuto MCP - Portmanteau Edition
 
-**Version 0.3.1** | **8 Comprehensive Portmanteau Tools** | **FastMCP 2.13.1** | **SOTA 2026 Compliant**
+**Version 0.4.0** | **10 Tools** | **FastMCP 2.13.1** | **Delphi Bridge**
 
-A sophisticated, FastMCP 2.13.1 compliant server for Windows UI automation using PyWinAuto. Features 8 comprehensive portmanteau tools consolidating 60+ operations, face recognition security, and professional packaging.
+A FastMCP 2.13.1 compliant server for Windows UI automation using PyWinAuto. Features 10 tools consolidating 60+ operations, with Delphi bridge integration for full VCL control access.
 
-## 🚀 What's New in v0.3.0 - Portmanteau Edition
+## What's New
 
-### Tool Consolidation
-Previous versions had 60+ individual tools scattered across multiple files with duplicates. The Portmanteau Edition consolidates everything into **8 comprehensive tools**:
+### Delphi Bridge Integration
+The `automation_elements` tool and the new `delphi_activeform` tool integrate with
+[DelphiUITestExposer](https://github.com/user/DelphiUITestExposer) — an HTTP server
+you embed in your Delphi application. The bridge exposes **all** VCL controls including
+non-windowed ones (TSpeedButton, TcxButton, TLabel, etc.) that the Win32 API cannot see.
+
+Each Delphi component's `Name` property is mapped to `automation_id`, making it the
+preferred selector for Delphi apps.
+
+### Tools
 
 | Tool | Operations | Description |
 |------|------------|-------------|
 | `automation_windows` | 11 | Window management (list, find, maximize, minimize, etc.) |
-| `automation_elements` | 14 | UI element interaction (click, hover, text, etc.) |
+| `automation_elements` | 14 | UI element interaction (click, hover, text, etc.) with Delphi bridge |
 | `automation_mouse` | 9 | Mouse control (move, click, scroll, drag) |
 | `automation_keyboard` | 4 | Keyboard input (type, press, hotkey) |
 | `automation_visual` | 4 | Visual operations (screenshot, OCR, find image) |
 | `automation_face` | 5 | Face recognition (add, recognize, list, delete) |
 | `automation_system` | 7 | System utilities (health, help, clipboard, processes) |
 | `get_desktop_state` | 1 | Comprehensive desktop UI element discovery |
-
-### Benefits
-- **Reduced tool explosion**: 60+ tools → 8 tools
-- **No duplicates**: Each operation defined once
-- **Better discoverability**: Related operations grouped together
-- **FastMCP 2.13.1 compliant**: Latest features and security fixes
-- **SOTA 2026 Standard**: 100% docstring compliance (Ruff D-rules) and industrial technical documentation
+| `delphi_activeform` | 1 | List interactive controls on the active Delphi form (bridge) |
+| `automation_batch` | 3 | Batch execute multiple operations in one call (bridge) |
 
 ## 🏆 Features
 
@@ -46,24 +49,58 @@ automation_windows("restore", handle=12345)
 automation_windows("position", handle=12345, x=100, y=100, width=800, height=600)
 ```
 
-### 🎯 Element Interaction (`automation_elements`)
+### Delphi Active Form (`delphi_activeform`)
 
-Elements can be targeted by `title`, `auto_id`, `class_name`, `control_type`, or `control_id`. Selectors can be combined for precision.
+Lists interactive controls on the currently focused Delphi form. No window handle needed.
+Returns a compact flat list with `automation_id`, `class_name`, `text`. Filters out labels,
+layout containers, and inner parts of composite controls by default to keep output small.
+
+Also detects native Win32 dialogs (MessageBox, TaskDialog, Open/Save) that the bridge
+cannot see, and reports them with their child controls (buttons, inputs, combos).
 
 ```python
-# Target elements directly by title (recommended for fewer round-trips)
-automation_elements("set_text", window_handle=12345, title="Username", text="admin")
-automation_elements("set_text", window_handle=12345, title="Password", text="secret")
-automation_elements("click", window_handle=12345, title="Login")
+# See what's on the active form — discover automation_id values
+delphi_activeform()
 
-# Target by automation id
-automation_elements("click", window_handle=12345, auto_id="btnSubmit")
+# Include read-only labels
+delphi_activeform(include_labels=True)
 
-# Target by control_id (classic approach)
-automation_elements("click", window_handle=12345, control_id="btnOK")
+# Include layout containers (TPanel, TScrollBox, etc.)
+delphi_activeform(include_containers=True)
 
-# Combine selectors for precision
-automation_elements("set_text", window_handle=12345, title="Name", control_type="Edit", text="Hello!")
+# Include hidden controls
+delphi_activeform(include_hidden=True)
+```
+
+### Element Interaction (`automation_elements`)
+
+Elements can be targeted by `auto_id`, `title`, `class_name`, `control_type`, or `control_id`.
+Use `window_title` or `window_handle` to specify the parent window.
+
+For Delphi apps with the bridge, `auto_id` maps to the Delphi component Name — this is
+the preferred selector. `active_form_only` defaults to `True` to avoid name collisions
+across forms.
+
+- **click**: Uses physical mouse input at screen coordinates (pyautogui). Supports `anchor`
+  parameter (`center`, `right`, `left`, `top`, `bottom`) to click specific edges of a control.
+- **set_text**: Click-to-focus + keyboard input (`Ctrl+A`, `Delete`, type)
+- **rect**: Returns screen coordinates of a control (bridge-first, UIA fallback)
+
+```python
+# Delphi app workflow: use auto_id (Delphi component Name)
+automation_elements("list", window_title="Login")
+automation_elements("set_text", auto_id="TE_Username", text="admin")
+automation_elements("set_text", auto_id="TE_Password", text="secret")
+automation_elements("click", auto_id="Btn_Login")
+
+# Click a dropdown button on the right edge of a combo
+automation_elements("click", auto_id="edType", anchor="right")
+
+# Get screen coordinates of a control
+automation_elements("rect", auto_id="edReferentie")
+
+# Target by caption text
+automation_elements("click", window_title="Login", title="Login")
 
 # Click by coordinates (relative to window)
 automation_elements("right_click", window_handle=12345, x=100, y=200)
@@ -74,6 +111,35 @@ automation_elements("verify_text", window_handle=12345, title="Status", expected
 
 # List all elements (for discovery when selectors are unknown)
 automation_elements("list", window_handle=12345, max_depth=3)
+```
+
+### Batch Operations (`automation_batch`)
+
+Execute multiple element operations in one call. Reduces round-trips for form-filling
+and multi-step workflows. Steps execute sequentially; stops on first error.
+
+```python
+# Fill a login form in one call
+automation_batch(steps=[
+    {"op": "set_text", "id": "TE_Username", "text": "admin"},
+    {"op": "set_text", "id": "TE_Password", "text": "secret"},
+    {"op": "click", "id": "Btn_Login"},
+])
+
+# Click a dropdown button on the right edge
+automation_batch(steps=[
+    {"op": "click", "id": "edType", "anchor": "right"},
+    {"op": "wait", "wait": 0.5},
+])
+
+# With explicit window context
+automation_batch(
+    window_title="Login",
+    steps=[
+        {"op": "set_text", "id": "edName", "text": "John"},
+        {"op": "click", "id": "btnSave", "wait": 1.0},
+    ],
+)
 ```
 
 ### 🖱️ Mouse Control (`automation_mouse`)
@@ -234,7 +300,7 @@ PORT=8000
 LOG_LEVEL=INFO
 
 # PyWinAuto Settings
-PYWINAUTO_BACKEND=uia  # "uia" (UI Automation/COM) or "win32" (native Win32 API)
+PYWINAUTO_BACKEND=win32  # "win32" (native Win32 API) or "uia" (UI Automation/COM)
 TIMEOUT=10.0
 RETRY_ATTEMPTS=3
 RETRY_DELAY=1.0
@@ -258,26 +324,21 @@ The Portmanteau Edition follows FastMCP 2.13+ best practices:
 pywinauto_mcp/
 ├── app.py                    # FastMCP app instance
 ├── main.py                   # Entry point
+├── config.py                 # Settings (backend, timeouts)
+├── delphi_bridge.py          # DelphiUITestExposer HTTP client
 └── tools/
     ├── __init__.py           # Tool registration
     ├── portmanteau_windows.py    # Window management
-    ├── portmanteau_elements.py   # UI elements
+    ├── portmanteau_elements.py   # UI elements + Delphi bridge
     ├── portmanteau_mouse.py      # Mouse control
     ├── portmanteau_keyboard.py   # Keyboard input
     ├── portmanteau_visual.py     # Visual/OCR
     ├── portmanteau_face.py       # Face recognition
     ├── portmanteau_system.py     # System utilities
     ├── desktop_state.py          # Desktop state (standalone)
-    └── archived/                 # Legacy tools (preserved)
+    ├── delphi_activeform.py      # Active Delphi form (bridge)
+    └── automation_batch.py       # Batch operations (bridge)
 ```
-
-### Why Portmanteau?
-
-1. **Prevents tool explosion**: Instead of 60+ tools, 8 comprehensive tools
-2. **Better discoverability**: Related operations grouped logically
-3. **Reduced cognitive load**: Fewer tools to remember
-4. **Consistent interface**: Each tool follows the same pattern
-5. **Easier maintenance**: Changes in one place affect all operations
 
 ## 🤝 Contributing
 

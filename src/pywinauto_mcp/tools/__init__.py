@@ -1,11 +1,11 @@
 """PyWinAuto MCP Tools Package - Portmanteau Edition.
 
-This package contains 8 comprehensive portmanteau tools for Windows UI automation,
+This package contains 10 tools for Windows UI automation,
 following FastMCP 2.13+ best practices for tool consolidation.
 
-PORTMANTEAU TOOL ARCHITECTURE:
+TOOL ARCHITECTURE:
 Instead of 60+ individual tools, this package consolidates related operations
-into 8 comprehensive portmanteau tools:
+into comprehensive portmanteau tools:
 
 1. automation_windows   - Window management (11 operations)
 2. automation_elements  - UI element interaction (14 operations)
@@ -15,12 +15,15 @@ into 8 comprehensive portmanteau tools:
 6. automation_face      - Face recognition (5 operations)
 7. automation_system    - System utilities (7 operations)
 8. get_desktop_state    - Comprehensive desktop UI discovery (standalone)
+9. delphi_activeform    - Active Delphi form controls via bridge (standalone)
+10. automation_batch         - Batch execute multiple operations in one call
 
-This design:
-- Prevents tool explosion while maintaining full functionality
-- Improves discoverability by grouping related operations
-- Reduces cognitive load when working with automation tasks
-- Follows FastMCP 2.13+ best practices
+DELPHI BRIDGE:
+Tools 2, 9 and 10 integrate with DelphiUITestExposer — an HTTP server embedded
+in the target Delphi application. The bridge exposes ALL VCL controls including
+non-windowed ones (TSpeedButton, TcxButton, TLabel, etc.) that Win32 API
+cannot see. Delphi component Names are mapped to automation_id for easy
+targeting (e.g. auto_id="TE_Username").
 """
 
 import logging
@@ -47,6 +50,8 @@ PORTMANTEAU_MODULES = [
     "portmanteau_face",  # Face recognition
     "portmanteau_system",  # System utilities
     "desktop_state",  # Desktop state capture (standalone)
+    "delphi_activeform",  # Delphi active form controls (bridge)
+    "automation_batch",  # Batch operations (bridge)
 ]
 
 # Import all portmanteau tool modules - this will trigger their registration with FastMCP
@@ -72,4 +77,6 @@ __all__ = [
     "portmanteau_face",
     "portmanteau_system",
     "desktop_state",
+    "delphi_activeform",
+    "automation_batch",
 ]

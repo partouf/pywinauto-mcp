@@ -43,6 +43,7 @@ except ImportError:
 import pyautogui
 
 from pywinauto_mcp.config import settings
+from pywinauto_mcp.delphi_bridge import DelphiBridge
 
 # Import the FastMCP app instance
 try:
@@ -55,6 +56,27 @@ except ImportError as e:
     logger.error(f"Failed to import FastMCP app in portmanteau_elements: {e}")
     app = None
 
+# Lazy-initialized Delphi bridge singleton
+_bridge: DelphiBridge | None = None
+_bridge_attempted: bool = False
+
+
+def _get_bridge() -> DelphiBridge | None:
+    """Get or discover the Delphi bridge (lazy singleton)."""
+    global _bridge, _bridge_attempted
+    if _bridge is not None and _bridge.connected:
+        return _bridge
+    if _bridge_attempted:
+        return _bridge
+    _bridge_attempted = True
+    _bridge = DelphiBridge()
+    if _bridge.discover():
+        logger.info(f"Delphi bridge connected at {_bridge.base_url}")
+    else:
+        logger.info("Delphi bridge not available, using Win32 only")
+        _bridge = None
+    return _bridge
+
 
 def _get_desktop():
     """Get a Desktop instance with proper error handling."""
@@ -63,6 +85,186 @@ def _get_desktop():
     except Exception as e:
         logger.error(f"Failed to get Desktop instance: {e}")
         raise
+
+
+def _bridge_control_to_element_info(ctrl: dict) -> dict:
+    """Convert a Delphi bridge control dict to our element info format."""
+    return {
+        "handle": ctrl.get("handle", 0),
+        "class_name": ctrl.get("className", ""),
+        "automation_id": ctrl.get("name", ""),
+        "text": ctrl.get("text", ""),
+        "name": ctrl.get("text", ""),
+        "x": ctrl.get("left", 0),
+        "y": ctrl.get("top", 0),
+        "width": ctrl.get("width", 0),
+        "height": ctrl.get("height", 0),
+        "is_visible": ctrl.get("visible", True),
+        "is_enabled": ctrl.get("enabled", True),
+        "parent_handle": ctrl.get("parentHandle", 0),
+        "children": [_bridge_control_to_element_info(c) for c in ctrl.get("children", [])],
+    }
+
+
+def _bridge_find_controls(
+    bridge: DelphiBridge,
+    auto_id: str | None = None,
+    title: str | None = None,
+    *,
+    active_form_only: bool = False,
+) -> list[dict]:
+    """Find controls via bridge, optionally restricted to the active form.
+
+    When *active_form_only* is True, fetches the active form's control tree
+    and searches within it — avoiding cross-form name collisions.
+    Otherwise delegates to the global /controls endpoint.
+    """
+    if not active_form_only:
+        params: dict[str, str] = {}
+        if auto_id:
+            params["name"] = auto_id
+        if title:
+            params["caption"] = title
+        return bridge.get_controls(**params)
+
+    # Active-form path: flatten the tree and filter locally
+    tree = bridge.get_activeform_controls()
+    matches: list[dict] = []
+
+    def _walk(nodes: list[dict]) -> None:
+        for node in nodes:
+            match = True
+            if auto_id and node.get("name", "") != auto_id:
+                match = False
+            if title and node.get("text", "") != title:
+                match = False
+            if match:
+                matches.append(node)
+            _walk(node.get("children", []))
+
+    _walk(tree)
+    return matches
+
+
+def _bridge_click(
+    ctrl: dict,
+    form_handle: int,
+    button: str = "left",
+    anchor: str = "center",
+) -> bool:
+    """Click a control found via the Delphi bridge.
+
+    Uses physical mouse input (pyautogui) at screen coordinates.
+    For windowed controls, uses GetWindowRect for exact position.
+    For non-windowed controls, falls back to form client-area offset.
+
+    *anchor* controls where within the control to click:
+      center (default), left, right, top, bottom.
+    Useful for clicking dropdown buttons on the right edge of combos.
+    """
+    try:
+        import win32gui
+
+        ctypes.windll.user32.SetForegroundWindow(form_handle)
+        time.sleep(0.05)
+
+        handle = ctrl.get("handle", 0)
+        if handle:
+            r = win32gui.GetWindowRect(handle)
+            left, top, right, bottom = r
+        else:
+            client_origin = win32gui.ClientToScreen(form_handle, (0, 0))
+            left = client_origin[0] + ctrl["left"]
+            top = client_origin[1] + ctrl["top"]
+            right = left + ctrl["width"]
+            bottom = top + ctrl["height"]
+
+        # Compute click point based on anchor
+        edge_inset = 10
+        if anchor == "right":
+            click_x = right - edge_inset
+            click_y = (top + bottom) // 2
+        elif anchor == "left":
+            click_x = left + edge_inset
+            click_y = (top + bottom) // 2
+        elif anchor == "top":
+            click_x = (left + right) // 2
+            click_y = top + edge_inset
+        elif anchor == "bottom":
+            click_x = (left + right) // 2
+            click_y = bottom - edge_inset
+        else:  # center
+            click_x = (left + right) // 2
+            click_y = (top + bottom) // 2
+
+        logger.info(
+            f"Bridge click at screen ({click_x}, {click_y}) "
+            f"anchor={anchor} for '{ctrl.get('name', '')}'"
+        )
+        pyautogui.click(click_x, click_y, button=button)
+        return True
+    except Exception as e:
+        logger.warning(f"Bridge coordinate click failed: {e}")
+        return False
+
+
+
+def _bridge_set_focus(ctrl: dict, form_handle: int) -> bool:
+    """Set keyboard focus to a control found via the Delphi bridge.
+
+    For windowed controls (handle != 0): uses Win32 SetFocus via
+    AttachThreadInput so it works cross-process.
+    For non-windowed controls: falls back to a physical click.
+    """
+    import win32gui
+    import win32process
+
+    # Bring the form to the foreground
+    ctypes.windll.user32.SetForegroundWindow(form_handle)
+    time.sleep(0.05)
+
+    handle = ctrl.get("handle", 0)
+    if handle:
+        # Windowed control — attach threads and SetFocus
+        try:
+            current_tid = ctypes.windll.kernel32.GetCurrentThreadId()
+            target_tid = win32process.GetWindowThreadProcessId(handle)[0]
+            attached = False
+            if current_tid != target_tid:
+                attached = bool(
+                    ctypes.windll.user32.AttachThreadInput(
+                        current_tid, target_tid, True
+                    )
+                )
+            try:
+                ctypes.windll.user32.SetFocus(handle)
+                logger.info(
+                    f"SetFocus on handle {handle} "
+                    f"for '{ctrl.get('name', '')}'"
+                )
+                return True
+            finally:
+                if attached:
+                    ctypes.windll.user32.AttachThreadInput(
+                        current_tid, target_tid, False
+                    )
+        except Exception as e:
+            logger.debug(f"SetFocus failed for {handle}: {e}")
+
+    # Non-windowed — click at coordinates to focus
+    try:
+        client_origin = win32gui.ClientToScreen(form_handle, (0, 0))
+        click_x = client_origin[0] + ctrl["left"] + ctrl["width"] // 2
+        click_y = client_origin[1] + ctrl["top"] + ctrl["height"] // 2
+        logger.info(
+            f"Focus via click at ({click_x}, {click_y}) "
+            f"for '{ctrl.get('name', '')}'"
+        )
+        pyautogui.click(click_x, click_y)
+        return True
+    except Exception as e:
+        logger.warning(f"Focus via click failed: {e}")
+        return False
 
 
 def _get_element_info(element) -> dict[str, Any]:
@@ -178,15 +380,16 @@ Using window_title lets you skip the window discovery step entirely.
 
 ELEMENT SELECTION:
 Elements can be targeted using any combination of these selectors:
+- auto_id: Delphi component Name (e.g., "TE_Username", "Btn_Login") — PREFERRED for Delphi apps.
+  Use "list" to discover available automation_id values.
+- title: Element caption/text (human-readable label)
 - control_id: Win32 or symbolic control identifier
-- auto_id: UIA AutomationId for precise targeting
-- title: Element name/caption text (human-readable label)
-- class_name: Windows class name
+- class_name: Windows/VCL class name (e.g., "TcxTextEdit", "TButton")
 - control_type: UI role (e.g., "Button", "Edit", "ComboBox")
 
-You can combine selectors to narrow matches (e.g., title="Username" + control_type="Edit").
-This means you do NOT need to call "list" first to discover control_ids - you can target
-elements directly by their visible title or automation id.
+You can combine selectors to narrow matches (e.g., auto_id="TE_Username").
+The Delphi bridge discovers ALL controls including non-windowed ones (TSpeedButton,
+TcxButton, etc.) that Win32 API cannot see.
 
 SUPPORTED OPERATIONS:
 - click: Click on element (by selector or coordinates)
@@ -204,27 +407,25 @@ SUPPORTED OPERATIONS:
 - verify_text: Verify element contains expected text
 - list: Get all elements in window (with depth control)
 
-Examples:
-    # Click a button by caption - just window title + button title
-    automation_elements("click", window_title="Login", title="OK")
+ACTIVE FORM SCOPE:
+active_form_only defaults to True — bridge lookups are restricted to the
+currently active form to avoid cross-form name collisions. Set False only
+when you need to target a control on a non-active form.
 
-    # Fill a form by window title (no handle needed)
-    automation_elements("set_text", window_title="Login", title="Username", text="admin")
-    automation_elements("set_text", window_title="Login", title="Password", text="secret")
+Examples:
+    # List elements to discover automation_id values
+    automation_elements("list", window_title="Login")
+
+    # Fill a Delphi form (active_form_only=True is the default)
+    automation_elements("set_text", auto_id="TE_Username", text="admin")
+    automation_elements("set_text", auto_id="TE_Password", text="secret")
+    automation_elements("click", auto_id="Btn_Login")
+
+    # Click by caption text
     automation_elements("click", window_title="Login", title="Login")
 
-    # Target by automation id
-    automation_elements("click", window_handle=12345, auto_id="btnSubmit")
-
-    # Target by control_id (classic approach)
-    automation_elements("click", window_handle=12345, control_id="btnOK")
-
-    # Combine selectors for precision
-    automation_elements("set_text", window_title="MyApp",
-        title="Name", control_type="Edit", text="Hello")
-
     # List all elements (for discovery when selectors are unknown)
-    automation_elements("list", window_title="MyApp", max_depth=3)
+    automation_elements("list", window_title="MyApp")
 
 """,
     )
@@ -255,6 +456,7 @@ Examples:
         x: int | None = None,
         y: int | None = None,
         button: str = "left",
+        anchor: str = "center",
         absolute: bool = False,
         duration: float = 0.5,
         text: str | None = None,
@@ -262,44 +464,9 @@ Examples:
         exact_match: bool = True,
         timeout: float = 5.0,
         max_depth: int = 3,
+        active_form_only: bool = True,
     ) -> dict[str, Any]:
         """Comprehensive UI element interaction operations for Windows automation.
-
-        PORTMANTEAU PATTERN RATIONALE:
-        Consolidates all element-level interactions into a single interface, significantly
-        reducing the complexity of UI navigation and manipulation. This approach ensures
-        consistent selection logic and error handling across different control types.
-        Follows FastMCP 2.14.3 standards for high-reliability UI automation.
-
-        SUPPORTED OPERATIONS:
-        - click: Triggers a standard mouse click on the specified UI element.
-        - double_click: Performs a double-click action on the element.
-        - right_click: Performs a right-click action on the element.
-        - hover: Moves the mouse cursor over the element without clicking.
-        - info: Retrieves detailed metadata for a control, including its type and role.
-        - text: Retrieves the current visible text content of an element.
-        - set_text: Inputs a string value into an editable field (e.g., text box).
-        - rect: Retrieves the screen coordinates and dimensions of the target element.
-        - visible: Checks if the element is currently visible on screen.
-        - enabled: Checks if the element is currently enabled for interaction.
-        - exists: Verifies the presence of the element in the UI tree.
-        - wait: Suspends execution until an element achieves a specific state (e.g., exists).
-        - verify_text: Compares the element's text content against an expected string.
-        - list: Recursively discovers child elements of the target window or container.
-
-        DIALOGIC RETURN PATTERN:
-        This tool implements the SOTA 2026 Dialogic Return Pattern for handling complex
-        UI state transitions. In scenarios where an element is visually blocked, disabled,
-        or exists in multiple instances (ambiguity), the tool transitions to a
-        clarification_needed status. The returned payload includes element_tree metadata
-        and suggested selection_alternatives to allow the AI agent to resolve the
-        ambiguity through precise coordinate or handle targeting.
-
-        USAGE AND RECOVERY:
-        Standard interaction requires a valid window_handle and one or more selection
-        criteria (auto_id, title, etc.). If an ElementNotFoundError occurs, the tool
-        returns diagnostic_info describing the current window state and suggested
-        recovery_options, such as increasing the timeout or refreshing the UI tree.
 
         Args:
             operation (str, required): The element interaction to perform.
@@ -307,13 +474,15 @@ Examples:
             window_title (str | None): Parent window title (exact, case-insensitive).
                 Use this instead of window_handle to skip the window discovery step.
             control_id (str | int | None): Win32 or symbolic control identifier.
-            auto_id (str | None): AutomationID for UIA-based element selection.
+            auto_id (str | None): AutomationID / Delphi component Name.
             title (str | None): Plaintext title or name of the target element.
             control_type (str | None): The expected UI role (e.g., Button, Edit).
             class_name (str | None): Windows class name for precise targeting.
             x (int | None): Horizontal offset for relative coordinate operations.
             y (int | None): Vertical offset for relative coordinate operations.
             button (str): Mouse button for clicks (left, right, middle, default left).
+            anchor (str): Where to click within the control: center (default),
+                right, left, top, bottom. Use "right" for dropdown buttons.
             absolute (bool): Toggles between element-relative and screen-absolute coordinates.
             duration (float): Time in seconds to complete a mouse movement or hover.
             text (str | None): The string value to input for set_text operations.
@@ -321,6 +490,9 @@ Examples:
             exact_match (bool): Toggles between strict and partial string matching.
             timeout (float): Maximum seconds to wait for an element to become ready.
             max_depth (int): Recursion limit for child element discovery.
+            active_form_only (bool): Restrict Delphi bridge lookups to the
+                currently active form. Default True to avoid cross-form name
+                collisions. Set False to search all forms.
 
         Returns:
             dict[str, Any]: Operation-specific result dictionary with element status.
@@ -328,6 +500,12 @@ Examples:
         """
         try:
             timestamp = time.time()
+            logger.info(
+                f"automation_elements('{operation}', "
+                f"window_handle={window_handle}, window_title={window_title}, "
+                f"control_id={control_id}, auto_id={auto_id}, title={title}, "
+                f"class_name={class_name}, control_type={control_type})"
+            )
             desktop = _get_desktop()
 
             # === RESOLVE WINDOW: by handle or by title ===
@@ -355,6 +533,25 @@ Examples:
                         "error": "window_handle or window_title parameter is required",
                     }
 
+                # Prefer Delphi bridge — sees all controls including non-windowed
+                bridge = _get_bridge()
+                if bridge is not None:
+                    try:
+                        raw = bridge.get_form_controls(window_handle)
+                        elements = [_bridge_control_to_element_info(c) for c in raw]
+                        return {
+                            "status": "success",
+                            "operation": "list",
+                            "source": "delphi_bridge",
+                            "window_handle": window_handle,
+                            "element_count": len(elements),
+                            "elements": elements,
+                            "timestamp": timestamp,
+                        }
+                    except Exception as e:
+                        logger.debug(f"Bridge list failed, falling back to Win32: {e}")
+
+                # Fallback: Win32 enumeration
                 window = desktop.window(handle=window_handle)
                 if not window.exists():
                     return {
@@ -382,6 +579,7 @@ Examples:
                 return {
                     "status": "success",
                     "operation": "list",
+                    "source": "win32",
                     "window_handle": window_handle,
                     "element_count": len(elements),
                     "elements": elements,
@@ -403,6 +601,33 @@ Examples:
 
             # === CLICK OPERATION ===
             if operation == "click":
+                # Try Delphi bridge first for auto_id or title
+                bridge = _get_bridge()
+                if bridge is not None and (auto_id or title):
+                    try:
+                        results = _bridge_find_controls(
+                            bridge, auto_id, title,
+                            active_form_only=active_form_only,
+                        )
+                        if results:
+                            ctrl = results[0]
+                            if _bridge_click(
+                                ctrl, window_handle, button,
+                                anchor=anchor,
+                            ):
+                                return {
+                                    "status": "success",
+                                    "operation": "click",
+                                    "source": "delphi_bridge",
+                                    "automation_id": ctrl.get("name", ""),
+                                    "text": ctrl.get("text", ""),
+                                    "button": button,
+                                    "anchor": anchor,
+                                    "timestamp": timestamp,
+                                }
+                    except Exception as e:
+                        logger.debug(f"Bridge click failed: {e}")
+
                 has_selector = any(
                     v is not None for v in [control_id, auto_id, title, class_name, control_type]
                 )
@@ -643,6 +868,42 @@ Examples:
                         "operation": "set_text",
                         "error": "text parameter is required for set_text operation",
                     }
+
+                # Try Delphi bridge first for auto_id or title
+                bridge = _get_bridge()
+                if bridge is not None and (auto_id or title):
+                    try:
+                        results = _bridge_find_controls(
+                            bridge, auto_id, title,
+                            active_form_only=active_form_only,
+                        )
+                        if results:
+                            ctrl = results[0]
+                            # Click the control to focus it — physical
+                            # click goes through VCL's full focus pipeline
+                            # which SetFocus alone does not.
+                            if _bridge_click(ctrl, window_handle):
+                                time.sleep(0.15)
+                                pyautogui.hotkey("ctrl", "a")
+                                pyautogui.press("delete")
+                                if text.isascii():
+                                    pyautogui.typewrite(
+                                        text, interval=0.02
+                                    )
+                                else:
+                                    pyautogui.write(text)
+                                return {
+                                    "status": "success",
+                                    "operation": "set_text",
+                                    "source": "delphi_bridge",
+                                    "automation_id": ctrl.get("name", ""),
+                                    "text_set": text,
+                                    "method": "keyboard",
+                                    "timestamp": timestamp,
+                                }
+                    except Exception as e:
+                        logger.debug(f"Bridge set_text failed: {e}")
+
                 if not element.exists():
                     return {
                         "status": "error",
@@ -669,44 +930,28 @@ Examples:
                         f"set_text: could not inspect children, using element directly: {e}"
                     )
 
-                # Use WM_SETTEXT via Win32 as the primary method — UIA
-                # ValuePattern.SetValue silently fails on many Delphi/DevExpress
-                # controls even though it reports success.
-                wm_settext = 0x000C
+                # Always use focus + keyboard input. WM_SETTEXT and UIA
+                # ValuePattern update the Win32 buffer but don't notify
+                # VCL/DevExpress, causing broken internal state.
+                if window_handle:
+                    ctypes.windll.user32.SetForegroundWindow(window_handle)
+                    time.sleep(0.05)
+
                 target_wrapper = (
                     target.wrapper_object() if hasattr(target, "wrapper_object") else target
                 )
-                target_handle = getattr(target_wrapper, "handle", None)
-
-                # Bring the parent window to the foreground first
-                if window_handle:
-                    ctypes.windll.user32.SetForegroundWindow(window_handle)
-
-                if target_handle:
-                    result = ctypes.windll.user32.SendMessageW(
-                        target_handle,
-                        wm_settext,
-                        0,
-                        text,
-                    )
-                    if result:
-                        method = "wm_settext"
-                    else:
-                        logger.debug("WM_SETTEXT returned 0, falling back to keyboard input")
-                        target_wrapper.set_focus()
-                        target_wrapper.type_keys("^a{DELETE}")
-                        target_wrapper.type_keys(text, with_spaces=True)
-                        method = "keyboard"
+                try:
+                    target_wrapper.set_focus()
+                except Exception:
+                    element.set_focus()
+                time.sleep(0.1)
+                pyautogui.hotkey("ctrl", "a")
+                pyautogui.press("delete")
+                if text.isascii():
+                    pyautogui.typewrite(text, interval=0.02)
                 else:
-                    try:
-                        target.set_edit_text(text)
-                        method = "direct"
-                    except Exception as e:
-                        logger.debug(f"set_edit_text failed, falling back to keyboard: {e}")
-                        element.set_focus()
-                        element.type_keys("^a{DELETE}")
-                        element.type_keys(text, with_spaces=True)
-                        method = "keyboard"
+                    pyautogui.write(text)
+                method = "keyboard"
 
                 return {
                     "status": "success",
@@ -719,6 +964,37 @@ Examples:
 
             # === RECT OPERATION ===
             elif operation == "rect":
+                # Try Delphi bridge first — UIA can't see many VCL controls
+                bridge = _get_bridge()
+                if bridge is not None and (auto_id or title):
+                    try:
+                        results = _bridge_find_controls(
+                            bridge, auto_id, title,
+                            active_form_only=active_form_only,
+                        )
+                        if results:
+                            ctrl = results[0]
+                            handle = ctrl.get("handle", 0)
+                            if handle:
+                                import win32gui
+
+                                r = win32gui.GetWindowRect(handle)
+                                return {
+                                    "status": "success",
+                                    "operation": "rect",
+                                    "source": "delphi_bridge",
+                                    "automation_id": ctrl.get("name", ""),
+                                    "left": r[0],
+                                    "top": r[1],
+                                    "right": r[2],
+                                    "bottom": r[3],
+                                    "width": r[2] - r[0],
+                                    "height": r[3] - r[1],
+                                    "timestamp": timestamp,
+                                }
+                    except Exception as e:
+                        logger.debug(f"Bridge rect failed: {e}")
+
                 if not element.exists():
                     return {
                         "status": "error",

@@ -180,6 +180,11 @@ Examples:
         """
         try:
             timestamp = time.time()
+            logger.info(
+                f"automation_windows('{operation}', "
+                f"handle={handle}, title={title}, process_id={process_id}, "
+                f"action={action})"
+            )
             window_system_metadata = {
                 "timestamp": timestamp,
                 "platform": "windows",

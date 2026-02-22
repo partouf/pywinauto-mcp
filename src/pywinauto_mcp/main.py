@@ -29,9 +29,9 @@ try:
         logger.critical("FastMCP app instance is None - cannot continue")
         sys.exit(1)
 
-    # Import tools after app is available to ensure proper registration
+    # Import tools package — triggers registration of all portmanteau tools
     try:
-        from pywinauto_mcp.tools import basic_tools  # noqa: F401
+        import pywinauto_mcp.tools  # noqa: F401
 
         logger.info("Successfully imported tools")
     except Exception as e:

@@ -1,5 +1,6 @@
 """Configuration settings for PyWinAuto MCP."""
 
+import logging
 from pathlib import Path
 
 try:
@@ -63,3 +64,7 @@ class Settings(BaseSettings):
 
 # Global settings instance
 settings = Settings()
+
+# Log effective backend at startup so we can verify in the log file
+_cfg_logger = logging.getLogger(__name__)
+_cfg_logger.info(f"Effective PYWINAUTO_BACKEND = '{settings.PYWINAUTO_BACKEND}'")
